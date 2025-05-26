@@ -5,6 +5,7 @@ import Table from "./table";
 import { AddTeacherButton } from "./addtechbutton";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 const djangoapi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -145,6 +146,8 @@ export default function Mainpage({ access, acc_name }: proptype) {
         triggerRefresh={triggerRefresh}
         access={access}
       />
+
+      <Analytics />
     </>
   );
 }

@@ -3,11 +3,6 @@ import verify from "./app/(main)/global functions/verify";
 
 const apiu = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://edusite-jet.vercel.app",
-];
-
 /**
  * This middleware verifies the access token and refreshes it if it's invalid.
  * It sets headers with user role, access token, and username if the access token is valid.
@@ -17,19 +12,6 @@ const allowedOrigins = [
  * If there is an error while verifying the access token, it redirects to the login page.
  */
 export async function middleware(req: NextRequest) {
-  const origin = req.headers.get("origin");
-  if (allowedOrigins.includes(origin)) {
-    req.headers.set("Access-Control-Allow-Origin", origin);
-    req.headers.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-    req.headers.set(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-  }
-
   try {
     const accesstok = req.cookies.get("access")?.value || "notfound";
     const res = await verify(accesstok, "access");
@@ -105,19 +87,3 @@ async function handleTokenRefresh(req: NextRequest, reftoken: string) {
 export const config = {
   matcher: ["/((?!api/login|login|_next/static|_next/image|favicon\\.ico).*)"],
 };
-
-export async function options(req: NextRequest) {
-  const origin = req.headers.get("origin");
-  if (allowedOrigins.includes(origin)) {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      },
-    });
-  }
-
-  return new Response(null, { status: 403 });
-}

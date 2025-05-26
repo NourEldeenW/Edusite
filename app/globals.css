@@ -1,21 +1,82 @@
 @import "tailwindcss";
 
+/* styles/globals.css */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core Color Palette */
+  --color-primary: #4f46e5;
+  --color-secondary: #0ea5e9;
+  --color-accent: #4f46e5;
+
+  /* Button Colors */
+  --color-primary-hover: #4338ca;
+  --color-secondary-hover: #0284c7;
+  --color-button-text: #ffffff;
+
+  /* Base & Background Colors */
+  --color-bg-base: #f9fafb;
+  --color-bg-secondary: #ffffff;
+  --color-bg-subtle: #e0e7ff;
+
+  /* Text & Typography */
+  --color-text-primary: #374151;
+  --color-text-secondary: #6b7280;
+  --color-text-inverse: #ffffff;
+  --color-link: #4f46e5;
+  --color-link-hover: #4338ca;
+
+  /* Borders & Lines */
+  --color-border-default: #d1d5db;
+  --color-border-focus: #4f46e5;
+  --color-border-card: #e5e7eb;
+
+  /* Special States & Feedback */
+  --color-error: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-disabled: #9ca3af;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+
+  --color-primary-hover: var(--color-primary-hover);
+  --color-secondary-hover: var(--color-secondary-hover);
+  --color-button-text: var(--color-button-text);
+
+  --color-bg-base: var(--color-bg-base);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-subtle: var(--color-bg-subtle);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-inverse: var(--color-text-inverse);
+  --color-link: var(--color-link);
+  --color-link-hover: var(--color-link-hover);
+
+  --color-border-default: var(--color-border-default);
+  --color-border-focus: var(--color-border-focus);
+  --color-border-card: var(--color-border-card);
+
+  --color-error: var(--color-error);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-disabled: var(--color-disabled);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+@layer components {
+  button:hover {
+    @apply cursor-pointer;
   }
 }
 

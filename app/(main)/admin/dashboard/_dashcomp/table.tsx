@@ -210,13 +210,13 @@ export default function TeachersTable({
                   Teacher
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-text-primary whitespace-nowrap min-w-[120px]">
-                  Assistants
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-text-primary whitespace-nowrap min-w-[120px]">
                   Active Students
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-text-primary whitespace-nowrap min-w-[140px]">
                   Inactive Students
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-text-primary whitespace-nowrap min-w-[120px]">
+                  Assistants
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-text-primary whitespace-nowrap min-w-[100px]">
                   Actions
@@ -241,42 +241,6 @@ export default function TeachersTable({
                           {teacher.full_name}
                         </p>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-text-primary">
-                    <div
-                      className={`py-1.5 px-3 w-fit h-fit rounded-full flex items-center space-x-2 transition-all duration-200 group ${
-                        Number(teacher.assistants_count) <= 0
-                          ? "bg-error/10 border-error/30 hover:bg-error/20"
-                          : "bg-success/10 border-success/30 hover:bg-success/20"
-                      } border`}>
-                      {Number(teacher.assistants_count) <= 0 ? (
-                        <AlertCircle
-                          className="h-4 w-4 text-error"
-                          strokeWidth={2}
-                        />
-                      ) : (
-                        <UsersRound
-                          className="h-4 w-4 text-success"
-                          strokeWidth={2}
-                        />
-                      )}
-                      <span
-                        className={`text-sm font-medium ${
-                          Number(teacher.assistants_count) <= 0
-                            ? "text-error"
-                            : "text-success"
-                        }`}>
-                        {teacher.assistants_count}
-                        <span
-                          className={`ml-1 text-xs font-normal ${
-                            Number(teacher.assistants_count) <= 0
-                              ? "text-error/70"
-                              : "text-success/70"
-                          }`}>
-                          assistant
-                        </span>
-                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-text-primary">
@@ -347,6 +311,42 @@ export default function TeachersTable({
                               : "text-gray-500"
                           }`}>
                           inactive
+                        </span>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-text-primary">
+                    <div
+                      className={`py-1.5 px-3 w-fit h-fit rounded-full flex items-center space-x-2 transition-all duration-200 group ${
+                        Number(teacher.assistants_count) <= 0
+                          ? "bg-error/10 border-error/30 hover:bg-error/20"
+                          : "bg-success/10 border-success/30 hover:bg-success/20"
+                      } border`}>
+                      {Number(teacher.assistants_count) <= 0 ? (
+                        <AlertCircle
+                          className="h-4 w-4 text-error"
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <UsersRound
+                          className="h-4 w-4 text-success"
+                          strokeWidth={2}
+                        />
+                      )}
+                      <span
+                        className={`text-sm font-medium ${
+                          Number(teacher.assistants_count) <= 0
+                            ? "text-error"
+                            : "text-success"
+                        }`}>
+                        {teacher.assistants_count}
+                        <span
+                          className={`ml-1 text-xs font-normal ${
+                            Number(teacher.assistants_count) <= 0
+                              ? "text-error/70"
+                              : "text-success/70"
+                          }`}>
+                          assistant
                         </span>
                       </span>
                     </div>
@@ -439,45 +439,6 @@ export default function TeachersTable({
 
               <div className="grid gap-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Assistants:</span>
-                  <span className="text-text-primary">
-                    <div
-                      className={`py-1.5 px-3 w-fit h-fit rounded-full flex items-center space-x-2 transition-all duration-200 group ${
-                        Number(teacher.assistants_count) <= 0
-                          ? "bg-error/10 border-error/30 hover:bg-error/20"
-                          : "bg-success/10 border-success/30 hover:bg-success/20"
-                      } border`}>
-                      {Number(teacher.assistants_count) <= 0 ? (
-                        <AlertCircle
-                          className="h-4 w-4 text-error"
-                          strokeWidth={2}
-                        />
-                      ) : (
-                        <UsersRound
-                          className="h-4 w-4 text-success"
-                          strokeWidth={2}
-                        />
-                      )}
-                      <span
-                        className={`text-sm font-medium ${
-                          Number(teacher.assistants_count) <= 0
-                            ? "text-error"
-                            : "text-success"
-                        }`}>
-                        {teacher.assistants_count}
-                        <span
-                          className={`ml-1 text-xs font-normal ${
-                            Number(teacher.assistants_count) <= 0
-                              ? "text-error/70"
-                              : "text-success/70"
-                          }`}>
-                          assistant
-                        </span>
-                      </span>
-                    </div>
-                  </span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-text-secondary">Active Students:</span>
                   <span className="text-text-primary">
                     <div
@@ -554,6 +515,45 @@ export default function TeachersTable({
                       </span>
                     </span>
                   </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Assistants:</span>
+                  <span className="text-text-primary">
+                    <div
+                      className={`py-1.5 px-3 w-fit h-fit rounded-full flex items-center space-x-2 transition-all duration-200 group ${
+                        Number(teacher.assistants_count) <= 0
+                          ? "bg-error/10 border-error/30 hover:bg-error/20"
+                          : "bg-success/10 border-success/30 hover:bg-success/20"
+                      } border`}>
+                      {Number(teacher.assistants_count) <= 0 ? (
+                        <AlertCircle
+                          className="h-4 w-4 text-error"
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <UsersRound
+                          className="h-4 w-4 text-success"
+                          strokeWidth={2}
+                        />
+                      )}
+                      <span
+                        className={`text-sm font-medium ${
+                          Number(teacher.assistants_count) <= 0
+                            ? "text-error"
+                            : "text-success"
+                        }`}>
+                        {teacher.assistants_count}
+                        <span
+                          className={`ml-1 text-xs font-normal ${
+                            Number(teacher.assistants_count) <= 0
+                              ? "text-error/70"
+                              : "text-success/70"
+                          }`}>
+                          assistant
+                        </span>
+                      </span>
+                    </div>
+                  </span>
                 </div>
               </div>
             </div>

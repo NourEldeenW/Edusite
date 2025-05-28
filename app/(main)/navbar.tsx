@@ -1,7 +1,8 @@
 "use client";
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Menu, LogOut } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
 interface linkitemdata {
   href: string;
@@ -17,40 +18,58 @@ interface NavbarProps {
 const api = process.env.NEXT_PUBLIC_localurl;
 
 export default function Navbar({ links }: NavbarProps) {
-  const [isopen, setIsopen] = useState(false);
-  const [wid, setWid] = useState<number | null>(null);
+  const router = useRouter();
   const current = usePathname();
+  const [wid, setWid] = useState<number | null>(null);
+  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
-    setWid(window.innerWidth);
-    const onResize = () => setWid(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const handleResize = () => setWid(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (wid === null) return null;
+  useEffect(() => {
+    if (wid !== null) {
+      setIsOpen(wid > 640);
+    }
+  }, [wid]);
 
-  const sm = wid > 640;
+  const handleLogout = async () => {
+    await fetch(`${api}logout`);
+    router.push("/login");
+    router.refresh();
+  };
+
+  const closeMobileMenu = () => {
+    if (wid !== null && wid <= 640) {
+      setIsOpen(false);
+    }
+  };
+
+  if (wid === null) return null;
+  const isMobile = wid <= 640;
 
   return (
     <>
-      {sm ? (
+      {!isMobile ? (
         <nav
           className={`sticky h-[100dvh] bg-gradient-to-b from-primary to-indigo-700 p-6 top-0 self-start overflow-hidden transition-all duration-300 ease-out ${
-            isopen ? "w-24" : "w-64"
+            isOpen ? "w-24" : "w-64"
           }`}>
           <ul className="h-full flex flex-col">
             <li className="mb-8 font-['Pacifico'] text-2xl text-white flex justify-between flex-row-reverse overflow-hidden">
               <span
                 className={`hover:bg-white/15 p-2 rounded-full flex items-center active:scale-95 ml-4 cursor-pointer transition-all ${
-                  isopen ? "-rotate-90" : "rotate-0"
+                  isOpen ? "-rotate-90" : "rotate-0"
                 }`}
-                onClick={() => setIsopen(!isopen)}>
+                onClick={() => setIsOpen(!isOpen)}>
                 <Menu size={30} color="#ffff" strokeWidth={2} />
               </span>
               <span
                 className={`transition-opacity ${
-                  isopen ? "opacity-0" : "opacity-100"
+                  isOpen ? "opacity-0" : "opacity-100"
                 }`}>
                 logo
               </span>
@@ -63,48 +82,42 @@ export default function Navbar({ links }: NavbarProps) {
                   className={`group relative mb-4 hover:bg-white/10 rounded-xl transition-all duration-200 ${
                     current === l.href ? "bg-white/15" : ""
                   }`}>
-                  <a href={l.href} className="block">
+                  <Link href={l.href} className="block">
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
                         {l.icon}
                       </span>
                       <span
                         className={`whitespace-nowrap transition-all duration-200 ${
-                          isopen
+                          isOpen
                             ? "opacity-0 translate-x-4"
                             : "opacity-100 translate-x-0"
                         }`}>
                         {l.name}
                       </span>
                     </span>
-                  </a>
+                  </Link>
                   <div className="absolute left-0 bottom-0 h-[2px] bg-white/30 w-0 group-hover:w-full transition-all duration-300" />
                 </li>
               ))}
             </div>
 
-            {/* Logout Button - Desktop */}
             <li className="mt-auto group relative mb-4 hover:bg-error/80 rounded-xl transition-all duration-200 bg-error/70">
-              <a
-                href="/login"
-                className="w-full block"
-                onClick={async () => await fetch(`${api}logout`)}>
+              <button onClick={handleLogout} className="w-full text-left">
                 <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                   <span className="flex items-center min-w-[30px]">
-                    <span>
-                      <LogOut />
-                    </span>
+                    <LogOut size={22} color="#ffff" strokeWidth={2} />
                   </span>
                   <span
                     className={`whitespace-nowrap transition-all duration-200 ${
-                      isopen
+                      isOpen
                         ? "opacity-0 translate-x-4"
                         : "opacity-100 translate-x-0"
                     }`}>
                     Logout
                   </span>
                 </span>
-              </a>
+              </button>
               <div className="absolute left-0 bottom-0 h-[2px] bg-white/30 w-0 group-hover:w-full transition-all duration-300" />
             </li>
           </ul>
@@ -115,23 +128,21 @@ export default function Navbar({ links }: NavbarProps) {
             <span className="font-['Pacifico'] text-2xl text-white">logo</span>
             <button
               className="p-2 hover:bg-white/15 rounded-full transition-all active:scale-95"
-              onClick={() => setIsopen(!isopen)}>
+              onClick={() => setIsOpen(!isOpen)}>
               <Menu size={30} color="#ffff" strokeWidth={2} />
             </button>
           </div>
 
-          {/* Mobile menu overlay */}
           <div
             className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ${
-              isopen ? "opacity-100 visible" : "opacity-0 invisible"
+              isOpen ? "opacity-100 visible" : "opacity-0 invisible"
             }`}
-            onClick={() => setIsopen(false)}
+            onClick={() => setIsOpen(false)}
           />
 
-          {/* Mobile menu content */}
           <nav
             className={`fixed left-0 top-0 h-[100dvh] bg-gradient-to-b from-primary to-indigo-700 w-64 p-6 transition-transform duration-300 ease-out ${
-              isopen ? "translate-x-0" : "-translate-x-full"
+              isOpen ? "translate-x-0" : "-translate-x-full"
             }`}>
             <ul className="h-full flex flex-col">
               {links.map((l) => (
@@ -140,32 +151,34 @@ export default function Navbar({ links }: NavbarProps) {
                   className={`mb-4 hover:bg-white/10 rounded-xl transition-all ${
                     current === l.href ? "bg-white/15" : ""
                   }`}>
-                  <a href={l.href} className="block">
+                  <Link
+                    href={l.href}
+                    onClick={closeMobileMenu}
+                    className="block">
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
                         {l.icon}
                       </span>
                       <span>{l.name}</span>
                     </span>
-                  </a>
+                  </Link>
                 </li>
               ))}
 
-              {/* Logout Button - Mobile */}
               <li className="mt-auto mb-4 hover:bg-error/80 rounded-xl transition-all duration-200 bg-error/70">
-                <a
-                  href="/login"
-                  className="w-full block"
-                  onClick={async () => await fetch(`${api}logout`)}>
+                <button
+                  onClick={() => {
+                    closeMobileMenu();
+                    handleLogout();
+                  }}
+                  className="w-full text-left">
                   <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                     <span className="flex items-center min-w-[30px]">
-                      <span>
-                        <LogOut />
-                      </span>
+                      <LogOut size={22} color="#ffff" strokeWidth={2} />
                     </span>
                     <span>LogOut</span>
                   </span>
-                </a>
+                </button>
               </li>
             </ul>
           </nav>

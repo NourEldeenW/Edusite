@@ -766,6 +766,10 @@ export default function TeachersTable({
                         : "border-border-default focus:border-primary focus:ring-primary/20"
                     }`}
                     defaultValue={teacherfetcheddata.full_name}
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoSave="off"
                   />
                 </div>
 
@@ -784,6 +788,10 @@ export default function TeachersTable({
                         : "border-border-default focus:border-primary focus:ring-primary/20"
                     }`}
                     defaultValue={teacherfetcheddata.phone_number}
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoSave="off"
                   />
                 </div>
 
@@ -812,13 +820,17 @@ export default function TeachersTable({
                     Password
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     name="password"
                     className={`w-full px-3 py-2 rounded-lg border bg-bg-primary transition-all duration-200 ${
                       iserror
                         ? "border-error focus:ring-error/20"
                         : "border-border-default focus:border-primary focus:ring-primary/20"
                     }`}
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoSave="off"
                   />
                 </div>
 

@@ -106,30 +106,132 @@ export default function StudentsTable({
     fetchteacherdata();
   }, [access, refkey]);
 
-  const filteredTeachers = fetchedteachersdata
-    .filter((teacher) =>
-      teacher.full_name.toLowerCase().startsWith(searchtext.toLowerCase())
-    )
-    .sort((a, b) => {
-      const aHasFilteredStudents = a.students.students_data.some((student) => {
-        if (activefilterbtn.filtertype === "all") return true;
-        return activefilterbtn.filtertype === "active"
-          ? student.is_approved
-          : !student.is_approved;
+  const filteredTeachers = (() => {
+    const normalizedSearch = searchtext
+      .toLowerCase()
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .trim();
+
+    // If empty search, return all teachers with sorting applied
+    if (!normalizedSearch) {
+      return fetchedteachersdata.sort((a, b) => {
+        const aHasFilteredStudents = a.students.students_data.some(
+          (student) => {
+            if (activefilterbtn.filtertype === "all") return true;
+            return activefilterbtn.filtertype === "active"
+              ? student.is_approved
+              : !student.is_approved;
+          }
+        );
+
+        const bHasFilteredStudents = b.students.students_data.some(
+          (student) => {
+            if (activefilterbtn.filtertype === "all") return true;
+            return activefilterbtn.filtertype === "active"
+              ? student.is_approved
+              : !student.is_approved;
+          }
+        );
+
+        if (aHasFilteredStudents && !bHasFilteredStudents) return -1;
+        if (!aHasFilteredStudents && bHasFilteredStudents) return 1;
+
+        return a.full_name.localeCompare(b.full_name);
       });
+    }
 
-      const bHasFilteredStudents = b.students.students_data.some((student) => {
-        if (activefilterbtn.filtertype === "all") return true;
-        return activefilterbtn.filtertype === "active"
-          ? student.is_approved
-          : !student.is_approved;
+    // Split search into individual words
+    const searchWords = normalizedSearch.split(" ");
+    const searchTerms = searchWords.filter((term) => term.length > 0);
+
+    // Scoring system for better matching
+    const scoreTeacher = (teacher: Teacher) => {
+      const lowerName = teacher.full_name.toLowerCase();
+      let score = 0;
+
+      // Exact match bonus
+      if (lowerName === normalizedSearch) return 100;
+
+      // Start with bonus
+      if (lowerName.startsWith(normalizedSearch)) return 90;
+
+      // Word-based matching
+      let allWordsMatch = true;
+      let consecutiveMatch = 0;
+      let maxConsecutive = 0;
+
+      for (let i = 0; i < searchTerms.length; i++) {
+        const term = searchTerms[i];
+        const termInName = lowerName.includes(term);
+
+        if (termInName) {
+          // Position bonus - earlier matches are better
+          const position = lowerName.indexOf(term);
+          score += 10 - Math.min(9, Math.floor(position / 10));
+
+          // Full word match bonus
+          const isFullWord = new RegExp(`\\b${term}\\b`).test(lowerName);
+          if (isFullWord) score += 5;
+
+          consecutiveMatch++;
+          maxConsecutive = Math.max(maxConsecutive, consecutiveMatch);
+        } else {
+          allWordsMatch = false;
+          consecutiveMatch = 0;
+        }
+      }
+
+      // Consecutive matches bonus
+      if (consecutiveMatch === searchTerms.length) score += 20;
+
+      // All words match bonus
+      if (allWordsMatch) score += 15;
+
+      // Order bonus - matches in original order
+      const inOrder = new RegExp(searchTerms.join(".*?")).test(lowerName);
+      if (inOrder) score += 10;
+
+      return score;
+    };
+
+    // Create scored teachers array
+    const scoredTeachers = fetchedteachersdata.map((teacher) => ({
+      teacher,
+      score: scoreTeacher(teacher),
+    }));
+
+    // Filter out teachers with no matches
+    const filtered = scoredTeachers.filter(({ score }) => score > 0);
+
+    // Sort by match quality (score) first, then by your custom sorting
+    return filtered
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.teacher)
+      .sort((a, b) => {
+        const aHasFilteredStudents = a.students.students_data.some(
+          (student) => {
+            if (activefilterbtn.filtertype === "all") return true;
+            return activefilterbtn.filtertype === "active"
+              ? student.is_approved
+              : !student.is_approved;
+          }
+        );
+
+        const bHasFilteredStudents = b.students.students_data.some(
+          (student) => {
+            if (activefilterbtn.filtertype === "all") return true;
+            return activefilterbtn.filtertype === "active"
+              ? student.is_approved
+              : !student.is_approved;
+          }
+        );
+
+        if (aHasFilteredStudents && !bHasFilteredStudents) return -1;
+        if (!aHasFilteredStudents && bHasFilteredStudents) return 1;
+
+        return a.full_name.localeCompare(b.full_name);
       });
-
-      if (aHasFilteredStudents && !bHasFilteredStudents) return -1;
-      if (!aHasFilteredStudents && bHasFilteredStudents) return 1;
-
-      return a.full_name.localeCompare(b.full_name);
-    });
+  })();
 
   return (
     <>

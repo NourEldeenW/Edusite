@@ -28,7 +28,7 @@ interface teacherdate {
   phone_number: string;
   gender: string;
   user: string;
-  subject: string;
+  subject: ListItem;
   grades: number[];
 }
 
@@ -67,7 +67,7 @@ export default function TeachersTable({
     phone_number: "",
     gender: "",
     user: "",
-    subject: "",
+    subject: { name: "", id: "" },
     grades: [],
   });
   const [gradesdata, setGradesdata] = useState<ListItem[]>([
@@ -84,11 +84,76 @@ export default function TeachersTable({
     setgetdata((prev) => prev + 1);
   };
 
-  const filteredTeachers = teachers
-    .filter((teacher) =>
-      teacher.full_name.toLowerCase().startsWith(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+  const filteredTeachers = (() => {
+    const normalizedQuery = searchQuery
+      .toLowerCase()
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .trim();
+
+    // If empty search, return all teachers sorted alphabetically
+    if (!normalizedQuery) {
+      return [...teachers].sort((a, b) =>
+        a.full_name.localeCompare(b.full_name)
+      );
+    }
+
+    // Split query into individual words
+    const searchTerms = normalizedQuery
+      .split(" ")
+      .filter((term) => term.length > 0);
+
+    // Phase 1: Find names starting with the entire query
+    const startsWithFullQuery = teachers.filter((teacher) =>
+      teacher.full_name.toLowerCase().startsWith(normalizedQuery)
+    );
+
+    if (startsWithFullQuery.length > 0) {
+      return startsWithFullQuery.sort((a, b) =>
+        a.full_name.localeCompare(b.full_name)
+      );
+    }
+
+    // Phase 2: Find names where all search terms appear in order
+    const allTermsInOrder = teachers.filter((teacher) => {
+      const lowerName = teacher.full_name.toLowerCase();
+      let currentIndex = 0;
+
+      for (const term of searchTerms) {
+        const termIndex = lowerName.indexOf(term, currentIndex);
+        if (termIndex === -1) return false;
+        currentIndex = termIndex + term.length;
+      }
+      return true;
+    });
+
+    if (allTermsInOrder.length > 0) {
+      return allTermsInOrder.sort((a, b) =>
+        a.full_name.localeCompare(b.full_name)
+      );
+    }
+
+    // Phase 3: Find names containing all search terms (any order)
+    const containsAllTerms = teachers.filter((teacher) => {
+      const lowerName = teacher.full_name.toLowerCase();
+      return searchTerms.every((term) => lowerName.includes(term));
+    });
+
+    if (containsAllTerms.length > 0) {
+      return containsAllTerms.sort((a, b) =>
+        a.full_name.localeCompare(b.full_name)
+      );
+    }
+
+    // Phase 4: Find names containing any search term
+    const containsAnyTerm = teachers.filter((teacher) => {
+      const lowerName = teacher.full_name.toLowerCase();
+      return searchTerms.some((term) => lowerName.includes(term));
+    });
+
+    return containsAnyTerm.sort((a, b) =>
+      a.full_name.localeCompare(b.full_name)
+    );
+  })();
 
   const submtdelete = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -125,7 +190,7 @@ export default function TeachersTable({
           full_name: formData.get("full_name"),
           phone_number: formData.get("phone_number"),
           gender: teacherfetcheddata.gender,
-          subject: teacherfetcheddata.subject,
+          subject: teacherfetcheddata.subject.id,
           grades: formData.getAll("grades").map((grade) => Number(grade)),
         },
         {
@@ -157,9 +222,8 @@ export default function TeachersTable({
           }
         );
         setSubjectsdata(subjectsResponse.data);
-        return "done";
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data(subjects and grades):   ", error);
       }
     };
 
@@ -793,11 +857,14 @@ export default function TeachersTable({
                       className={`w-full px-3 py-2 rounded-lg border bg-bg-primary pr-8 appearance-none ${
                         iserror ? "border-error" : "border-border-default"
                       }`}
-                      value={teacherfetcheddata.subject}
+                      value={teacherfetcheddata.subject.id}
                       onChange={(e) =>
                         setTeacherfetcheddata((prev) => ({
                           ...prev,
-                          subject: e.target.value,
+                          subject: {
+                            ...teacherfetcheddata.subject,
+                            id: e.target.value,
+                          },
                         }))
                       }>
                       <option value="">Select Subject</option>
@@ -910,7 +977,7 @@ export default function TeachersTable({
                       phone_number: "",
                       gender: "",
                       user: "",
-                      subject: "",
+                      subject: { id: "", name: "" },
                       grades: [],
                     });
                   }}

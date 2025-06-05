@@ -1,4 +1,4 @@
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, UsersRound } from "lucide-react";
 import Navbar from "./navbar";
 import { headers } from "next/headers";
 import Studentsicon from "@/public/customicons/studentico";
@@ -18,7 +18,20 @@ const links = {
       icon: <Studentsicon size={22} color="#ffff" strokeWidth={2} />,
     },
   ],
-  teacher: [],
+  teacher: [
+    {
+      href: "/teacher/dashboard",
+      key: "dashboard",
+      name: "Dashboard",
+      icon: <LayoutDashboard size={22} color="#ffff" strokeWidth={2} />,
+    },
+    {
+      href: "/students",
+      key: "students",
+      name: "Students",
+      icon: <UsersRound size={22} color="#ffff" strokeWidth={2} />,
+    },
+  ],
   assistant: [],
   student: [],
 };

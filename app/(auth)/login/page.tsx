@@ -1,4 +1,4 @@
-import LgnForm from "@/app/_form/form";
+import LgnForm from "@/app/(auth)/login/_form/form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

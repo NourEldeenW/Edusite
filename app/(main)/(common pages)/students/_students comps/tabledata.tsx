@@ -309,6 +309,7 @@ export default function TableData({
               <TableHead className="text-left">Center</TableHead>
               <TableHead className="text-left">Grade</TableHead>
               <TableHead className="text-left">Status</TableHead>
+              <TableHead className="text-left">Created by</TableHead>
               <TableHead className="text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -354,6 +355,7 @@ export default function TableData({
                     {student.is_approved ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
+                <TableCell>{student.added_by}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

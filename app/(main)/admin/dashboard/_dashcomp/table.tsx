@@ -1,5 +1,5 @@
 "use client";
-import axios from "axios";
+import { api } from "@/lib/axiosinterceptor";
 import {
   Search,
   Edit,
@@ -160,7 +160,7 @@ export default function TeachersTable({
 
     const deleteteacher = async () => {
       try {
-        await axios.delete(`${djangoapi}accounts/teachers/${deletedid}/`, {
+        await api.delete(`${djangoapi}accounts/teachers/${deletedid}/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
         triggerRefresh();
@@ -183,7 +183,7 @@ export default function TeachersTable({
     const formData = new FormData(e.currentTarget);
 
     try {
-      await axios.put(
+      await api.put(
         `${djangoapi}accounts/teachers/${editedname_id.eid}/`,
         {
           password: formData.get("password"),
@@ -210,12 +210,12 @@ export default function TeachersTable({
   useEffect(() => {
     const fetchavailableData = async () => {
       try {
-        const gradesResponse = await axios.get(`${djangoapi}accounts/grades/`, {
+        const gradesResponse = await api.get(`${djangoapi}accounts/grades/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
         setGradesdata(gradesResponse.data);
 
-        const subjectsResponse = await axios.get(
+        const subjectsResponse = await api.get(
           `${djangoapi}accounts/subjects/`,
           {
             headers: { Authorization: `Bearer ${access}` },
@@ -231,7 +231,7 @@ export default function TeachersTable({
 
     const fetchteacherdata = async () => {
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `${djangoapi}accounts/teachers/${editedname_id.eid}/`,
           {
             headers: { Authorization: `Bearer ${access}` },

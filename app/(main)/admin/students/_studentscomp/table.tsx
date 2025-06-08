@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-import axios from "axios";
+import { api } from "@/lib/axiosinterceptor";
 import { Student } from "./mainpage";
 import { CheckCircle, XCircle } from "lucide-react";
 
@@ -56,7 +56,7 @@ export default function StudentsTable({
     setActionBtnDisabled(true);
 
     try {
-      await axios.post(
+      await api.post(
         `${djangoapi}accounts/students/approve/`,
         {
           student_ids: selectedStudents.map((s) => s.id),
@@ -95,7 +95,7 @@ export default function StudentsTable({
   useEffect(() => {
     const fetchteacherdata = async () => {
       try {
-        const res = await axios.get(`${djangoapi}accounts/teachers/`, {
+        const res = await api.get(`${djangoapi}accounts/teachers/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
         setFetchedteachersdata(res.data);
@@ -367,6 +367,9 @@ export default function StudentsTable({
                         Grade
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        center
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -425,6 +428,9 @@ export default function StudentsTable({
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             {student.grade.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {student.center.name}
                           </td>
                           <td className="px-6 py-4">
                             <span

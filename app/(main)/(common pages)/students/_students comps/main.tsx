@@ -1,5 +1,5 @@
 "use client";
-
+import { api } from "@/lib/axiosinterceptor";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -118,20 +118,20 @@ export default function StudentManagementPage({
       try {
         const [gradesResponse, centersResponse, studentsResponse] =
           await Promise.all([
-            fetch(`${DJANGO_API_URL}accounts/grades/`, {
+            api.get(`${DJANGO_API_URL}accounts/grades/`, {
               headers: { Authorization: `Bearer ${access}` },
             }),
-            fetch(`${DJANGO_API_URL}accounts/centers/`, {
+            api.get(`${DJANGO_API_URL}accounts/centers/`, {
               headers: { Authorization: `Bearer ${access}` },
             }),
-            fetch(`${DJANGO_API_URL}accounts/students/`, {
+            api.get(`${DJANGO_API_URL}accounts/students/`, {
               headers: { Authorization: `Bearer ${access}` },
             }),
           ]);
 
-        setAvailableGrades(await gradesResponse.json());
-        setAvailableCenters(await centersResponse.json());
-        setAllStudents(await studentsResponse.json());
+        setAvailableGrades(await gradesResponse.data);
+        setAvailableCenters(await centersResponse.data);
+        setAllStudents(await studentsResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -153,24 +153,25 @@ export default function StudentManagementPage({
   const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch(
+      const requestData = {
+        ...newStudentForm,
+        gender: newStudentForm.gender.toLowerCase(),
+        grade: newStudentForm.grade.id,
+        center: newStudentForm.center.id,
+      };
+
+      const response = await api.post(
         `${DJANGO_API_URL}accounts/students/create/`,
+        requestData, // Send the data directly as the second argument
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${access}`,
           },
-          body: JSON.stringify({
-            ...newStudentForm,
-            gender: newStudentForm.gender.toLowerCase(),
-            grade: newStudentForm.grade.id,
-            center: newStudentForm.center.id,
-          }),
         }
       );
 
-      if (!response.ok) throw new Error(response.statusText);
+      if (!response.data) throw new Error(response.statusText);
 
       showToast("Student added successfully", "success");
       setNewStudentForm({
@@ -192,19 +193,18 @@ export default function StudentManagementPage({
   const handleCreateCenter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch(
+      const response = await api.post(
         `${DJANGO_API_URL}accounts/centers/create/`,
+        { name: newCenterName },
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${access}`,
           },
-          body: JSON.stringify({ name: newCenterName }),
         }
       );
 
-      if (!response.ok) throw new Error(response.statusText);
+      if (!response.data) throw new Error(response.statusText);
 
       showToast("Center added successfully", "success");
       setNewCenterName("");
@@ -220,7 +220,7 @@ export default function StudentManagementPage({
     const randomString = Math.random().toString(36).substring(2, 10);
     setNewStudentForm((prev) => ({
       ...prev,
-      username: `student_${randomString}`,
+      username: `stu_${randomString}`,
       password: `pass_${randomString}`,
     }));
   };

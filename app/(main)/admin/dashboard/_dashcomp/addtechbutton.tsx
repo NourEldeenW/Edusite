@@ -1,7 +1,7 @@
 "use client";
 import { CheckCircle, ChevronDown, Plus, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/axiosinterceptor";
 
 const djangoapi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -30,12 +30,12 @@ export function AddTeacherButton({ accesss, triggerRefresh }: acces) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const gradesResponse = await axios.get(`${djangoapi}accounts/grades/`, {
+        const gradesResponse = await api.get(`${djangoapi}accounts/grades/`, {
           headers: { Authorization: `Bearer ${accesss}` },
         });
         setGradesdata(gradesResponse.data);
 
-        const subjectsResponse = await axios.get(
+        const subjectsResponse = await api.get(
           `${djangoapi}accounts/subjects/`,
           {
             headers: { Authorization: `Bearer ${accesss}` },
@@ -56,7 +56,7 @@ export function AddTeacherButton({ accesss, triggerRefresh }: acces) {
     const formData = new FormData(e.currentTarget);
 
     try {
-      await axios.post(
+      await api.post(
         `${djangoapi}/accounts/teachers/create/`,
         {
           username: formData.get("username"),

@@ -3,7 +3,7 @@
 import { UserRound, Clock, GraduationCap } from "lucide-react";
 import StudentsTable from "./table";
 // import { AddStudentButton } from "./_studentscomp/addstudentbtn";
-import axios from "axios";
+import { api } from "@/lib/axiosinterceptor";
 import { useEffect, useState } from "react";
 
 export interface Student {
@@ -16,7 +16,7 @@ export interface Student {
   user: number;
   teacher: number;
   grade: { id: number; name: "string" };
-  center: number;
+  center: { id: number; name: "string" };
 }
 
 const djangoapi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
@@ -34,7 +34,7 @@ export default function Mainpage({ access }: propstype) {
     async function fetchStudents() {
       if (!access) return;
       try {
-        const res = await axios.get(`${djangoapi}accounts/students/`, {
+        const res = await api.get(`${djangoapi}accounts/students/`, {
           headers: { Authorization: `Bearer ${access}` },
           signal: controller.signal,
         });

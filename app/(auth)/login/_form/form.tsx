@@ -23,7 +23,7 @@ export default function LgnForm() {
     setWrongdata(false);
 
     try {
-      const res = await axios.post(`${baseurl}login/`, urldata);
+      const res = await axios.post(`${baseurl}auth/login/`, urldata);
 
       setsuccessData(true);
       console.log(res.data);

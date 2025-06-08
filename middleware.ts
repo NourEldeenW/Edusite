@@ -55,7 +55,16 @@ async function handleTokenRefresh(req: NextRequest, reftoken: string) {
       body: JSON.stringify({ refresh: reftoken }),
     });
 
-    if (!refreshResponse.ok) return redirectToLogin(req);
+    if (refreshResponse.status !== 200) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      const res = NextResponse.json({ message: "invalid token" });
+
+      res.cookies.set("access", "", { expires: new Date(0) });
+      res.cookies.set("refresh", "", { expires: new Date(0) });
+
+      return res;
+    }
 
     const newTokens = await refreshResponse.json();
     const final = NextResponse.redirect(req.nextUrl.clone());
@@ -85,5 +94,7 @@ async function handleTokenRefresh(req: NextRequest, reftoken: string) {
 }
 
 export const config = {
-  matcher: ["/((?!api/login|login|_next/static|_next/image|favicon\\.ico).*)"],
+  matcher: [
+    "/((?!api/auth/login|login|_next/static|_next/image|favicon\\.ico).*)",
+  ],
 };

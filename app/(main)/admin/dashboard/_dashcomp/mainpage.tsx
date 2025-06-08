@@ -1,10 +1,10 @@
 "use client";
-import axios, { AxiosResponse } from "axios";
+import { api } from "@/lib/axiosinterceptor";
 import { UserRound, UsersRound, Clock } from "lucide-react";
 import Table from "./table";
 import { AddTeacherButton } from "./addtechbutton";
-import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AxiosResponse } from "axios";
 
 const djangoapi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -22,16 +22,13 @@ export default function Mainpage({ access, acc_name }: proptype) {
 
     async function getdata() {
       try {
-        const res = await axios.get(`${djangoapi}accounts/dashboard/admin/`, {
+        const res = await api.get(`${djangoapi}accounts/dashboard/admin/`, {
           headers: { Authorization: `Bearer ${access}` },
           signal: controller.signal,
         });
         return res;
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status === 401) redirect("/admin/dashboard");
-          if (err.name === "CanceledError") return;
-        }
+      } catch {
+        return null;
       }
     }
 

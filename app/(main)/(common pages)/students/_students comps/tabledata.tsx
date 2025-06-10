@@ -156,6 +156,9 @@ export default function TableData({
   const [selectedCenter, setSelectedCenter] = useState("all");
   const [selectedGrade, setSelectedGrade] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [isFilterGradesOpen, setIsFilterGradesOpen] = useState(false);
+  const [isFilterCentersOpen, setIsFilterCentersOpen] = useState(false);
+  const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
   const [isEditStudentDialogOpen, setIsEditStudentDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteStudentId, setDeleteStudentId] = useState<number | null>(null);
@@ -263,7 +266,9 @@ export default function TableData({
             normalizePhone(student.phone_number).includes(normalizedQuery)) ||
           (hasDigits &&
             student.parent_number &&
-            normalizePhone(student.parent_number).includes(normalizedQuery));
+            normalizePhone(student.parent_number).includes(normalizedQuery)) ||
+          (hasDigits &&
+            normalizePhone(student.student_id).includes(normalizedQuery));
 
         if (!matchesSearch) return false;
       }
@@ -448,8 +453,8 @@ export default function TableData({
           <FilterPopover
             icon={<BookOpen size={16} />}
             label={selectedGradeName}
-            openState={false}
-            onOpenChange={() => {}}>
+            openState={isFilterGradesOpen}
+            onOpenChange={setIsFilterGradesOpen}>
             <Command>
               <CommandInput placeholder="Search grade..." />
               <CommandList>
@@ -473,8 +478,8 @@ export default function TableData({
           <FilterPopover
             icon={<Building2 size={16} />}
             label={selectedCenterName}
-            openState={false}
-            onOpenChange={() => {}}>
+            openState={isFilterCentersOpen}
+            onOpenChange={setIsFilterCentersOpen}>
             <Command>
               <CommandInput placeholder="Search center..." />
               <CommandList>
@@ -498,8 +503,8 @@ export default function TableData({
           <FilterPopover
             icon={<UserCircle size={16} />}
             label={selectedStatusName}
-            openState={false}
-            onOpenChange={() => {}}>
+            openState={isFilterStatusOpen}
+            onOpenChange={setIsFilterStatusOpen}>
             <Command>
               <CommandList>
                 {statusOptions.map((status) => (
@@ -651,87 +656,102 @@ const StudentRow = ({
   getStatusColor,
   onEdit,
   onDelete,
-}: StudentRowProps) => (
-  <TableRow className="hover:bg-bg-subtle">
-    <TableCell>
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="h-5 w-5 text-primary" />
-        </div>
-        <p className="font-medium text-text-primary">{student.full_name}</p>
-      </div>
-    </TableCell>
-    <TableCell>
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-sm">
-          <Phone className="h-3 w-3 text-text-secondary" />
-          <span>{student.phone_number}</span>
-        </div>
-        {student.parent_number && (
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <Users className="h-3 w-3" />
-            <span>{student.parent_number}</span>
+}: StudentRowProps) => {
+  const [isDropDownOpen, setIsDropDownOpen] = useState(false);
+
+  return (
+    <TableRow className="hover:bg-bg-subtle">
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="h-5 w-5 text-primary" />
           </div>
-        )}
-      </div>
-    </TableCell>
-    <TableCell>
-      <Badge variant="outline" className="gap-1">
-        <Building2 className="h-4 w-4" />
-        {student.center.name}
-      </Badge>
-    </TableCell>
-    <TableCell>{student.grade.name}</TableCell>
-    <TableCell>
-      <Badge
-        className={`${getStatusColor(
-          student.is_approved ? "active" : "inactive"
-        )} border`}>
-        {student.is_approved ? "Active" : "Inactive"}
-      </Badge>
-    </TableCell>
-    <TableCell>{student.added_by}</TableCell>
-    <TableCell>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Actions">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-fit p-3">
-          <DropdownMenuLabel className="text-sm font-medium text-text-secondary">
-            Actions
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
-            onSelect={(e) => e.preventDefault()}>
-            <Eye className="h-4 w-4 text-text-secondary" />
-            <span>View Details</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
-            onSelect={(e) => {
-              e.preventDefault();
-              onEdit();
-            }}>
-            <Edit className="h-4 w-4 text-text-secondary" />
-            <span>Edit</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="flex items-center gap-2 px-2 py-2 text-sm text-error hover:cursor-pointer focus:bg-error/20"
-            onSelect={(e) => {
-              e.preventDefault();
-              onDelete();
-            }}>
-            <Trash2 className="h-4 w-4 text-error" />
-            <span>Delete</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TableCell>
-  </TableRow>
-);
+          <div>
+            <p className="font-medium text-text-primary">{student.full_name}</p>
+            <p className="text-sm text-text-secondary font-medium">
+              ID: {student.student_id}
+            </p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm">
+            <Phone className="h-3 w-3 text-text-secondary" />
+            <span>{student.phone_number}</span>
+          </div>
+          {student.parent_number && (
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <Users className="h-3 w-3" />
+              <span>{student.parent_number}</span>
+            </div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline" className="gap-1">
+          <Building2 className="h-4 w-4" />
+          {student.center.name}
+        </Badge>
+      </TableCell>
+      <TableCell>{student.grade.name}</TableCell>
+      <TableCell>
+        <Badge
+          className={`${getStatusColor(
+            student.is_approved ? "active" : "inactive"
+          )} border`}>
+          {student.is_approved ? "Active" : "Inactive"}
+        </Badge>
+      </TableCell>
+      <TableCell>{student.added_by}</TableCell>
+      <TableCell>
+        <DropdownMenu open={isDropDownOpen} onOpenChange={setIsDropDownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Actions"
+              className="hover:bg-gray-300">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-fit p-3">
+            <DropdownMenuLabel className="text-sm font-medium text-text-secondary">
+              Actions
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
+              onSelect={(e) => e.preventDefault()}>
+              <Eye className="h-4 w-4 text-text-secondary" />
+              <span>View Details</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
+              onSelect={(e) => {
+                e.preventDefault();
+                setIsDropDownOpen(false);
+                onEdit();
+              }}>
+              <Edit className="h-4 w-4 text-text-secondary" />
+              <span>Edit</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex items-center gap-2 px-2 py-2 text-sm text-error hover:cursor-pointer focus:bg-error/20"
+              onSelect={(e) => {
+                e.preventDefault();
+                setIsDropDownOpen(false);
+                onDelete();
+              }}>
+              <Trash2 className="h-4 w-4 text-error" />
+              <span>Delete</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 interface DeleteDialogProps {
   open: boolean;
@@ -756,7 +776,8 @@ const DeleteDialog = ({
         <Button
           variant="outline"
           onClick={() => onOpenChange(false)}
-          disabled={isLoading}>
+          disabled={isLoading}
+          className="hover:bg-bg-secondary">
           Cancel
         </Button>
         <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
@@ -1126,7 +1147,8 @@ const EditStudentDialog = ({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                type="button">
+                type="button"
+                className="hover:bg-bg-secondary">
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>

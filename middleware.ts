@@ -95,6 +95,6 @@ async function handleTokenRefresh(req: NextRequest, reftoken: string) {
 
 export const config = {
   matcher: [
-    "/((?!api/auth/login|login|_next/static|_next/image|favicon\\.ico).*)",
+    "/((?!api/auth/login|login|api/auth/refresh|_next/static|_next/image|favicon\\.ico).*)",
   ],
 };

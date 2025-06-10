@@ -54,6 +54,14 @@ export interface GradeType {
   name: string;
 }
 
+export const showToast = (message: string, type: "success" | "error") => {
+  toast[type](type === "success" ? "Success" : "Error", {
+    description: message,
+    action: { label: "Ok", onClick: () => toast.dismiss() },
+    position: "top-center",
+  });
+};
+
 export interface StudentData {
   id: number;
   student_id: string;
@@ -112,8 +120,10 @@ export default function StudentManagementPage({
   const [availableGrades, setAvailableGrades] = useState<GradeType[]>([]);
   const [availableCenters, setAvailableCenters] = useState<GradeType[]>([]);
   const [allStudents, setAllStudents] = useState<StudentData[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
+    setIsFetching(true);
     const fetchInitialData = async () => {
       try {
         const [gradesResponse, centersResponse, studentsResponse] =
@@ -134,19 +144,13 @@ export default function StudentManagementPage({
         setAllStudents(await studentsResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setIsFetching(false);
       }
     };
 
     fetchInitialData();
   }, [access, refreshCounter]);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    toast[type](type === "success" ? "Success" : "Error", {
-      description: message,
-      action: { label: "Ok", onClick: () => console.log("Toast closed") },
-      position: "top-center",
-    });
-  };
 
   const triggerDataRefresh = () => setRefreshCounter((prev) => prev + 1);
 
@@ -730,6 +734,9 @@ export default function StudentManagementPage({
         data={allStudents}
         availableCentersInitial={availableCenters}
         availableGradesInitial={availableGrades}
+        access={access}
+        triggerDataRefresh={triggerDataRefresh}
+        isFetching={isFetching}
       />
     </div>
   );

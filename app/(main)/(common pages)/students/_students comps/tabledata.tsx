@@ -422,9 +422,10 @@ export default function TableData({
         headers: { Authorization: `Bearer ${access}` },
       });
       toast.success("Student deleted successfully!");
-      setFilteredData((prev) =>
-        prev.filter((student) => student.id !== deleteStudentId)
-      );
+      // setFilteredData((prev) =>
+      //   prev.filter((student) => student.id !== deleteStudentId)
+      // );
+      triggerDataRefresh();
     } catch (error) {
       console.error("Failed to delete student:", error);
       toast.error("Failed to delete student. Please try again.");
@@ -433,7 +434,7 @@ export default function TableData({
       setShowDeleteDialog(false);
       setDeleteStudentId(null);
     }
-  }, [access, deleteStudentId]);
+  }, [access, deleteStudentId, triggerDataRefresh]);
 
   return (
     <>
@@ -444,7 +445,7 @@ export default function TableData({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, phone, or parent phone..."
+            placeholder="Search by name, phone, or ID..."
             className="w-full"
           />
         </div>

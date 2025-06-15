@@ -42,7 +42,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import StatCard from "./cards";
 import TableData from "./tabledata";
@@ -121,6 +121,38 @@ export default function StudentManagementPage({
   const [availableCenters, setAvailableCenters] = useState<GradeType[]>([]);
   const [allStudents, setAllStudents] = useState<StudentData[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [isDownLoading, setIsDownloading] = useState(false);
+
+  const downloadData = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await api.get(
+        `${DJANGO_API_URL}accounts/students/export/`,
+        {
+          headers: { Authorization: `Bearer ${access}` },
+          responseType: "blob", // this is critical
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "students_data.xlsx";
+      document.body.appendChild(a);
+      a.style.display = "none";
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading the Excel file:", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     setIsFetching(true);
@@ -139,9 +171,9 @@ export default function StudentManagementPage({
             }),
           ]);
 
-        setAvailableGrades(await gradesResponse.data);
-        setAvailableCenters(await centersResponse.data);
-        setAllStudents(await studentsResponse.data);
+        setAvailableGrades(gradesResponse.data);
+        setAvailableCenters(centersResponse.data);
+        setAllStudents(studentsResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -151,6 +183,16 @@ export default function StudentManagementPage({
 
     fetchInitialData();
   }, [access, refreshCounter]);
+
+  const activeStudentsCount = useMemo(
+    () => allStudents.filter((student) => student.is_approved).length,
+    [allStudents]
+  );
+
+  const inactiveStudentsCount = useMemo(
+    () => allStudents.filter((student) => !student.is_approved).length,
+    [allStudents]
+  );
 
   const triggerDataRefresh = () => setRefreshCounter((prev) => prev + 1);
 
@@ -221,16 +263,17 @@ export default function StudentManagementPage({
   };
 
   const generateRandomCredentials = () => {
-    const randomString = Math.random().toString(36).substring(2, 10);
+    const randomStringname = Math.random().toString(36).substring(2, 10);
+    const randomStringpass = Math.random().toString(36).substring(2, 10);
     setNewStudentForm((prev) => ({
       ...prev,
-      username: `stu_${randomString}`,
-      password: `pass_${randomString}`,
+      username: `stu_${randomStringname}`,
+      password: `pass_${randomStringpass}`,
     }));
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 bg-bg-base min-h-screen dark:bg-bg-subtle">
+    <div className="space-y-4 sm:space-y-6 bg-bg-base min-h-screen">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -246,7 +289,11 @@ export default function StudentManagementPage({
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-end">
           <Button
             variant="outline"
-            className="gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0">
+            className={`gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 ${
+              isDownLoading ? "hover:cursor-not-allowed bg-disabled" : ""
+            }`}
+            onClick={downloadData}
+            disabled={isDownLoading}>
             <Upload className="h-4 w-4" /> Export
           </Button>
 
@@ -712,18 +759,13 @@ export default function StudentManagementPage({
         <StatCard
           iconContainerClass="bg-success/10"
           title="Active Students"
-          value={
-            allStudents.filter((student) => student.is_approved === true).length
-          }
+          value={activeStudentsCount}
           icon={<CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-success" />}
         />
         <StatCard
           iconContainerClass="bg-warning/10"
           title="Inactive Students"
-          value={
-            allStudents.filter((student) => student.is_approved === false)
-              .length
-          }
+          value={inactiveStudentsCount}
           icon={<AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 text-warning" />}
         />
       </div>

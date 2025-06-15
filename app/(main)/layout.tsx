@@ -1,4 +1,4 @@
-import { LayoutDashboard, UsersRound } from "lucide-react";
+import { LayoutDashboard, UsersRound, ShieldUser } from "lucide-react";
 import Navbar from "./navbar";
 import { headers } from "next/headers";
 import Studentsicon from "@/public/customicons/studentico";
@@ -31,8 +31,21 @@ const links = {
       name: "Students",
       icon: <UsersRound size={22} color="#ffff" strokeWidth={2} />,
     },
+    {
+      href: "/teacher/assistants",
+      key: "assistants",
+      name: "Assistants",
+      icon: <ShieldUser size={22} color="#ffff" strokeWidth={2} />,
+    },
   ],
-  assistant: [],
+  assistant: [
+    {
+      href: "/students",
+      key: "students",
+      name: "Students",
+      icon: <UsersRound size={22} color="#ffff" strokeWidth={2} />,
+    },
+  ],
   student: [],
 };
 

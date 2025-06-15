@@ -22,6 +22,7 @@ export default function Navbar({ links }: NavbarProps) {
   const current = usePathname();
   const [wid, setWid] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(true);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => setWid(window.innerWidth);
@@ -36,7 +37,13 @@ export default function Navbar({ links }: NavbarProps) {
     }
   }, [wid]);
 
+  // Reset loading when route changes
+  useEffect(() => {
+    setLoadingKey(null);
+  }, [current]);
+
   const handleLogout = async () => {
+    setLoadingKey("logout");
     await fetch(`${api}auth/logout`);
     router.push("/login");
     router.refresh();
@@ -48,8 +55,17 @@ export default function Navbar({ links }: NavbarProps) {
     }
   };
 
+  const handleLinkClick = (key: string) => {
+    setLoadingKey(key);
+  };
+
   if (wid === null) return null;
   const isMobile = wid <= 640;
+
+  // Simple spinner
+  const Spinner = () => (
+    <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+  );
 
   return (
     <>
@@ -57,7 +73,7 @@ export default function Navbar({ links }: NavbarProps) {
         <nav
           className={`sticky h-[100dvh] bg-gradient-to-b from-primary to-indigo-700 p-6 top-0 self-start overflow-hidden transition-all duration-300 ease-out ${
             isOpen ? "w-24" : "w-64"
-          }`}>
+          } shadow-xl`}>
           <ul className="h-full flex flex-col">
             <li className="mb-8 font-['Pacifico'] text-2xl text-white flex justify-between flex-row-reverse overflow-hidden">
               <span
@@ -82,10 +98,13 @@ export default function Navbar({ links }: NavbarProps) {
                   className={`group relative mb-4 hover:bg-white/10 rounded-xl transition-all duration-200 ${
                     current === l.href ? "bg-white/15" : ""
                   }`}>
-                  <Link href={l.href} className="block">
+                  <Link
+                    href={l.href}
+                    className="block"
+                    onClick={() => handleLinkClick(l.key)}>
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
-                        {l.icon}
+                        {loadingKey === l.key ? <Spinner /> : l.icon}
                       </span>
                       <span
                         className={`whitespace-nowrap transition-all duration-200 ${
@@ -93,7 +112,11 @@ export default function Navbar({ links }: NavbarProps) {
                             ? "opacity-0 translate-x-4"
                             : "opacity-100 translate-x-0"
                         }`}>
-                        {l.name}
+                        {loadingKey === l.key ? (
+                          <span className="text-white/70">{l.name}</span>
+                        ) : (
+                          l.name
+                        )}
                       </span>
                     </span>
                   </Link>
@@ -103,10 +126,17 @@ export default function Navbar({ links }: NavbarProps) {
             </div>
 
             <li className="mt-auto group relative mb-4 hover:bg-error/80 rounded-xl transition-all duration-200 bg-error/70">
-              <button onClick={handleLogout} className="w-full text-left">
+              <button
+                onClick={handleLogout}
+                className="w-full text-left disabled:opacity-60"
+                disabled={loadingKey === "logout"}>
                 <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                   <span className="flex items-center min-w-[30px]">
-                    <LogOut size={22} color="#ffff" strokeWidth={2} />
+                    {loadingKey === "logout" ? (
+                      <Spinner />
+                    ) : (
+                      <LogOut size={22} color="#ffff" strokeWidth={2} />
+                    )}
                   </span>
                   <span
                     className={`whitespace-nowrap transition-all duration-200 ${
@@ -114,7 +144,11 @@ export default function Navbar({ links }: NavbarProps) {
                         ? "opacity-0 translate-x-4"
                         : "opacity-100 translate-x-0"
                     }`}>
-                    Logout
+                    {loadingKey === "logout" ? (
+                      <span className="text-white/70">Logging out...</span>
+                    ) : (
+                      "Logout"
+                    )}
                   </span>
                 </span>
               </button>
@@ -153,13 +187,22 @@ export default function Navbar({ links }: NavbarProps) {
                   }`}>
                   <Link
                     href={l.href}
-                    onClick={closeMobileMenu}
+                    onClick={() => {
+                      handleLinkClick(l.key); // Add loading state
+                      closeMobileMenu();
+                    }}
                     className="block">
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
-                        {l.icon}
+                        {loadingKey === l.key ? <Spinner /> : l.icon}
                       </span>
-                      <span>{l.name}</span>
+                      <span>
+                        {loadingKey === l.key ? (
+                          <span className="text-white/70">{l.name}</span>
+                        ) : (
+                          l.name
+                        )}
+                      </span>
                     </span>
                   </Link>
                 </li>
@@ -171,12 +214,23 @@ export default function Navbar({ links }: NavbarProps) {
                     closeMobileMenu();
                     handleLogout();
                   }}
-                  className="w-full text-left">
+                  className="w-full text-left disabled:opacity-60"
+                  disabled={loadingKey === "logout"}>
                   <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                     <span className="flex items-center min-w-[30px]">
-                      <LogOut size={22} color="#ffff" strokeWidth={2} />
+                      {loadingKey === "logout" ? (
+                        <Spinner />
+                      ) : (
+                        <LogOut size={22} color="#ffff" strokeWidth={2} />
+                      )}
                     </span>
-                    <span>LogOut</span>
+                    <span>
+                      {loadingKey === "logout" ? (
+                        <span className="text-white/70">Logging out...</span>
+                      ) : (
+                        "Logout"
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>

@@ -266,7 +266,7 @@ export default function TableData({
           payload.phone_number = editAssistantdata.phone_number;
         }
         if (editAssistantdata.gender !== initialAssistanttData.gender) {
-          payload.gender = editAssistantdata.gender;
+          payload.gender = editAssistantdata.gender.toLowerCase();
         }
         if (editAssistantdata.username !== initialAssistanttData.username) {
           payload.username = editAssistantdata.username;

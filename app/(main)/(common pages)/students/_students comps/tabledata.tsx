@@ -377,7 +377,7 @@ export default function TableData({
           payload.parent_number = editstudentdata.parent_number;
         }
         if (editstudentdata.gender !== initialStudentData.gender) {
-          payload.gender = editstudentdata.gender;
+          payload.gender = editstudentdata.gender.toLowerCase();
         }
         if (editstudentdata.username !== initialStudentData.username) {
           payload.username = editstudentdata.username;

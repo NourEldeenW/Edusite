@@ -104,7 +104,11 @@ export default function Navbar({ links }: NavbarProps) {
                     onClick={() => handleLinkClick(l.key)}>
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
-                        {loadingKey === l.key ? <Spinner /> : l.icon}
+                        {loadingKey === l.key && l.href !== current ? (
+                          <Spinner />
+                        ) : (
+                          l.icon
+                        )}
                       </span>
                       <span
                         className={`whitespace-nowrap transition-all duration-200 ${

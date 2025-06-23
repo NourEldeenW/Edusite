@@ -1,7 +1,15 @@
-import { LayoutDashboard, UsersRound, ShieldUser } from "lucide-react";
+import { UsersRound } from "lucide-react";
 import Navbar from "./navbar";
 import { headers } from "next/headers";
 import Studentsicon from "@/public/customicons/studentico";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faGraduationCap,
+  faUserShield,
+  faBook,
+} from "@fortawesome/free-solid-svg-icons";
+
+import { LayoutDashboard } from "lucide-react";
 
 const links = {
   admin: [
@@ -9,7 +17,13 @@ const links = {
       href: "/admin/dashboard",
       key: "dashboard",
       name: "Dashboard",
-      icon: <LayoutDashboard size={22} color="#ffff" strokeWidth={2} />,
+      icon: (
+        <LayoutDashboard
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+          strokeWidth={2}
+        />
+      ),
     },
     {
       href: "/admin/students",
@@ -23,19 +37,50 @@ const links = {
       href: "/teacher/dashboard",
       key: "dashboard",
       name: "Dashboard",
-      icon: <LayoutDashboard size={22} color="#ffff" strokeWidth={2} />,
+      icon: (
+        <LayoutDashboard
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+          strokeWidth={2}
+          fill="#ffff"
+        />
+      ),
     },
     {
       href: "/students",
       key: "students",
       name: "Students",
-      icon: <UsersRound size={22} color="#ffff" strokeWidth={2} />,
+      icon: (
+        <FontAwesomeIcon
+          icon={faGraduationCap}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
     },
     {
       href: "/teacher/assistants",
       key: "assistants",
       name: "Assistants",
-      icon: <ShieldUser size={22} color="#ffff" strokeWidth={2} />,
+      icon: (
+        <FontAwesomeIcon
+          icon={faUserShield}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/studymaterials",
+      key: "studymaterials",
+      name: "Study Materials",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBook}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
     },
   ],
   assistant: [

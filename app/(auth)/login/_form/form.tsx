@@ -72,6 +72,7 @@ export default function LgnForm() {
               minLength={4}
               maxLength={15}
               disabled={disabled}
+              autoComplete="username"
             />
           </div>
         </div>
@@ -102,6 +103,7 @@ export default function LgnForm() {
               minLength={6}
               maxLength={15}
               disabled={disabled}
+              autoComplete="current-password"
             />
             <button
               type="button"

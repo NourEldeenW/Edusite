@@ -51,13 +51,14 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       sameSite: "strict",
       path: "/",
+      secure: process.env.NODE_ENV === "production",
     });
 
     final.cookies.set("refresh", refresh, {
       httpOnly: true,
       sameSite: "strict",
       path: "/",
-      maxAge: 604800, // 7 days in seconds
+      secure: process.env.NODE_ENV === "production",
     });
 
     return final;

@@ -1,57 +1,102 @@
-// components/WeekForm.tsx
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { api } from "@/lib/axiosinterceptor";
 import { Button } from "@/components/ui/button";
-import { X, Loader2, BookOpen, ChevronDown } from "lucide-react";
-import { GradeType } from "../../students/_students comps/main";
+import { X, Loader2, BookOpen } from "lucide-react";
+import type { GradeType } from "../../students/_students comps/main";
+import { Week } from "./main";
 
 const DJANGO_API_URL = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
-interface WeekFormProps {
-  grades: GradeType[];
+interface EditWeekFormProps {
+  week: Week;
   centers: GradeType[];
-  onSuccess: () => void;
+  onSuccess: (t: string, d: string) => void;
   onCancel: () => void;
   access: string;
-  selectedgrade: number;
 }
 
-export default function WeekForm({
-  grades,
+// CenterItem component definition
+const CenterItem = memo(
+  ({
+    center,
+    isSelected,
+    onClick,
+  }: {
+    center: GradeType;
+    isSelected: boolean;
+    onClick: () => void;
+  }) => (
+    <div
+      onClick={onClick}
+      className={`
+      flex items-center p-3 rounded-xl border cursor-pointer transition-all duration-300
+      ${
+        isSelected
+          ? "bg-primary/10 border-primary shadow-sm"
+          : "bg-bg-tertiary border-border-default hover:border-primary/50"
+      }
+    `}>
+      <div
+        className={`
+        flex items-center justify-center w-5 h-5 rounded-md border mr-3 transition-all
+        ${isSelected ? "bg-primary border-primary" : "border-border-default"}
+      `}>
+        {isSelected && (
+          <svg
+            className="w-4 h-4 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        )}
+      </div>
+      <span className={isSelected ? "font-medium" : ""}>{center.name}</span>
+    </div>
+  )
+);
+CenterItem.displayName = "CenterItem";
+
+export default function EditWeekForm({
+  week,
   centers,
   onSuccess,
   onCancel,
   access,
-  selectedgrade,
-}: WeekFormProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedCenters, setSelectedCenters] = useState<number[]>([]);
+}: EditWeekFormProps) {
+  const [title, setTitle] = useState(week.title);
+  const [description, setDescription] = useState(week.description);
+  const [selectedCenters, setSelectedCenters] = useState<number[]>(
+    week.centers.map((center) => center.id)
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [gradeId, setGradeId] = useState<number>(selectedgrade);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      await api.post(
-        `${DJANGO_API_URL}studymaterials/weeks/create/`,
+      await api.put(
+        `${DJANGO_API_URL}studymaterials/weeks/${week.id}/`,
         {
           title,
           description,
-          grade: gradeId,
           centers: selectedCenters,
         },
         {
           headers: { Authorization: `Bearer ${access}` },
         }
       );
-      onSuccess();
+      onSuccess(title, description);
     } catch (error) {
-      console.error("Failed to create week:", error);
+      console.error("Failed to update week:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -73,7 +118,7 @@ export default function WeekForm({
             <BookOpen className="h-6 w-6 text-primary" />
           </div>
           <h2 className="text-2xl font-bold text-text-primary">
-            Create New Study Week
+            Edit Study Week
           </h2>
         </div>
         <Button
@@ -115,78 +160,18 @@ export default function WeekForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="group">
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Grade
-              </label>
-              <div className="relative">
-                <select
-                  value={gradeId}
-                  onChange={(e) => setGradeId(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-bg-tertiary border border-border-default rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none transition-all duration-300">
-                  {grades.map((grade) => (
-                    <option key={grade.id} value={grade.id}>
-                      {grade.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ChevronDown className="h-5 w-5 text-text-secondary" />
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
               Centers
             </label>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {centers.map((center) => (
-                <div
+                <CenterItem
                   key={center.id}
-                  className={`
-                    flex items-center p-3 rounded-xl border cursor-pointer transition-all duration-300
-                    ${
-                      selectedCenters.includes(center.id)
-                        ? "bg-primary/10 border-primary shadow-sm"
-                        : "bg-bg-tertiary border-border-default hover:border-primary/50"
-                    }
-                  `}
-                  onClick={() => toggleCenter(center.id)}>
-                  <div
-                    className={`
-                    flex items-center justify-center w-5 h-5 rounded-md border mr-3 transition-all
-                    ${
-                      selectedCenters.includes(center.id)
-                        ? "bg-primary border-primary"
-                        : "border-border-default"
-                    }
-                  `}>
-                    {selectedCenters.includes(center.id) && (
-                      <svg
-                        className="w-4 h-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  <span
-                    className={
-                      selectedCenters.includes(center.id) ? "font-medium" : ""
-                    }>
-                    {center.name}
-                  </span>
-                </div>
+                  center={center}
+                  isSelected={selectedCenters.includes(center.id)}
+                  onClick={() => toggleCenter(center.id)}
+                />
               ))}
             </div>
           </div>
@@ -208,10 +193,10 @@ export default function WeekForm({
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Creating Week...
+                Updating Week...
               </div>
             ) : (
-              "Create Study Week"
+              "Update Study Week"
             )}
           </Button>
         </div>

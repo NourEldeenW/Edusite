@@ -42,6 +42,9 @@ export interface MaterialCardData {
   date: string;
   file_url?: string;
   text_content?: string;
+  external_url?: string;
+  material_type: string;
+  date_created: string;
 }
 
 interface MaterialCardsGridProps {

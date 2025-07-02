@@ -9,7 +9,6 @@ interface linkitemdata {
   key: string;
   name: string;
   icon: React.ReactNode;
-  pref: false;
 }
 
 interface NavbarProps {
@@ -102,8 +101,7 @@ export default function Navbar({ links }: NavbarProps) {
                   <Link
                     href={l.href}
                     className="block"
-                    onClick={() => handleLinkClick(l.key)}
-                    prefetch={l.pref}>
+                    onClick={() => handleLinkClick(l.key)}>
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
                         {loadingKey === l.key && l.href !== current ? (
@@ -197,8 +195,7 @@ export default function Navbar({ links }: NavbarProps) {
                       handleLinkClick(l.key); // Add loading state
                       closeMobileMenu();
                     }}
-                    className="block"
-                    prefetch={l.pref}>
+                    className="block">
                     <span className="flex gap-3 text-lg font-semibold text-white font-[lato] p-3">
                       <span className="flex items-center min-w-[30px]">
                         {loadingKey === l.key ? <Spinner /> : l.icon}

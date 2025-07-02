@@ -383,7 +383,7 @@ export default function AttendanceForm({
           {isScanning ? (
             <>
               <div className="w-full h-fit flex flex-col items-center p-1 sm:p-4">
-                <div className="w-full h-0 max-w-lg rounded-xl overflow-hidden relative shadow-2xl flex-1 ">
+                <div className="w-full h-0 max-w-lg rounded-xl overflow-hidden relative shadow-2xl flex-1 qr-scanner-container">
                   <BarcodeScanner
                     width="100%"
                     height="100%"

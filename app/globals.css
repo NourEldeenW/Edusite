@@ -220,3 +220,13 @@ video {
   transform: scaleX(-1); /* Mirror the video for more natural feel */
   background: #000; /* Black background for unused space */
 }
+
+.qr-scanner-container {
+  transform: scaleX(-1);
+}
+
+.qr-scanner-container video {
+  transform: scaleX(
+    -1
+  ); /* Flip the video back to normal within the container */
+}

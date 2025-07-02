@@ -53,7 +53,13 @@ export default function WeekList({
   availgrades,
 }: WeekListProps) {
   const filteredWeeks = selectedGrade
-    ? weeks.filter((week) => week.grade.id === selectedGrade)
+    ? weeks
+        .filter((week) => week.grade.id === selectedGrade)
+        .sort(
+          (a, b) =>
+            new Date(a.date_created).getTime() -
+            new Date(b.date_created).getTime()
+        )
     : weeks;
 
   return (

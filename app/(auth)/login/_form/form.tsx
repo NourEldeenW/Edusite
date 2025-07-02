@@ -26,7 +26,6 @@ export default function LgnForm() {
       const res = await axios.post(`${baseurl}auth/login/`, urldata);
 
       setsuccessData(true);
-      console.log(res.data);
 
       if (res.data.redirectto) {
         router.push(res.data.redirectto);

@@ -177,7 +177,7 @@ export default function EditWeekForm({
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 mt-8 pt-5 border-t border-border-default">
+        <div className="flex justify-end space-x-3 mt-8 pt-5 border-t border-border-default flex-wrap space-y-2">
           <Button
             type="button"
             variant="outline"

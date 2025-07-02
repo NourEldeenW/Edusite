@@ -1,4 +1,3 @@
-import { UsersRound } from "lucide-react";
 import Navbar from "./navbar";
 import { headers } from "next/headers";
 import Studentsicon from "@/public/customicons/studentico";
@@ -7,6 +6,8 @@ import {
   faGraduationCap,
   faUserShield,
   faBook,
+  faSchoolCircleCheck,
+  faBuildingUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { LayoutDashboard } from "lucide-react";
@@ -82,13 +83,67 @@ const links = {
         />
       ),
     },
+    {
+      href: "/attendance",
+      key: "attendance",
+      name: "Attendance",
+      icon: (
+        <FontAwesomeIcon
+          icon={faSchoolCircleCheck}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/sessions",
+      key: "sessions",
+      name: "Sessions",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBuildingUser}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
   ],
   assistant: [
     {
       href: "/students",
       key: "students",
       name: "Students",
-      icon: <UsersRound size={22} color="#ffff" strokeWidth={2} />,
+      icon: (
+        <FontAwesomeIcon
+          icon={faGraduationCap}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/studymaterials",
+      key: "studymaterials",
+      name: "Study Materials",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBook}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/attendance",
+      key: "attendance",
+      name: "Attendance",
+      icon: (
+        <FontAwesomeIcon
+          icon={faSchoolCircleCheck}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
     },
   ],
   student: [],

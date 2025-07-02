@@ -215,3 +215,8 @@ input[type="password"]::-ms-clear {
     transform: translateY(0);
   }
 }
+
+video {
+  transform: scaleX(-1); /* Mirror the video for more natural feel */
+  background: #000; /* Black background for unused space */
+}

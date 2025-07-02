@@ -84,14 +84,20 @@ const MaterialCardsGrid: React.FC<MaterialCardsGridProps> = React.memo(
 
     return (
       <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
-        {materials.map((material) => (
-          <MaterialCard
-            key={material.id}
-            {...material}
-            onEdit={onEdit ? () => onEdit(material) : undefined}
-            onDelete={onDelete ? () => onDelete(material) : undefined}
-          />
-        ))}
+        {materials
+          .sort(
+            (a, b) =>
+              new Date(a.date_created).getTime() -
+              new Date(b.date_created).getTime()
+          )
+          .map((material) => (
+            <MaterialCard
+              key={material.id}
+              {...material}
+              onEdit={onEdit ? () => onEdit(material) : undefined}
+              onDelete={onDelete ? () => onDelete(material) : undefined}
+            />
+          ))}
       </div>
     );
   }

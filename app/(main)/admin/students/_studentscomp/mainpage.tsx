@@ -2,12 +2,12 @@
 
 import { UserRound, Clock, GraduationCap } from "lucide-react";
 import StudentsTable from "./table";
-// import { AddStudentButton } from "./_studentscomp/addstudentbtn";
 import { api } from "@/lib/axiosinterceptor";
 import { useEffect, useState } from "react";
 
 export interface Student {
   id: number;
+  student_id: string;
   full_name: string;
   phone_number: string;
   parent_number: string;

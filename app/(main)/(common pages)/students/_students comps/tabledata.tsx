@@ -622,7 +622,7 @@ interface FilterPopoverProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const FilterPopover = ({
+export const FilterPopover = ({
   icon,
   label,
   children,

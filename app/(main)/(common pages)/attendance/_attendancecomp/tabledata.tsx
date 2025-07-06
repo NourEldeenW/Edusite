@@ -72,6 +72,8 @@ export default function TableData({
   const [editedStudentStatuses, setEditedStudentStatuses] =
     useState<editedStudentStatusesType>();
   const [isLoading, setIsLoading] = useState(false);
+  const [localAttendedStudents, setLocalAttendedStudents] =
+    useState<Attendance_StudentType[]>(attended_students);
 
   const { allStudents } = useContext(AllStudentsContext);
   const hashomework = useContext(homework);
@@ -84,8 +86,8 @@ export default function TableData({
 
   // Memoize attended student IDs for efficient lookup
   const attendedStudentIds = useMemo(() => {
-    return new Set(attended_students.map((student) => student.id));
-  }, [attended_students]);
+    return new Set(localAttendedStudents.map((student) => student.id));
+  }, [localAttendedStudents]);
 
   // Filter students into attended/absent arrays
   const [attended, absent] = useMemo(() => {
@@ -130,48 +132,123 @@ export default function TableData({
     fetchHW();
   }, [sessionID, access, attended, hashomework]);
 
+  useEffect(() => {
+    setLocalAttendedStudents(attended_students);
+  }, [attended_students]);
+
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    if (editedStudent?.id !== undefined) {
-      // Ensure editedStudent.id is not undefined
+
+    if (!editedStudent) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Save original state for rollback
+    const originalAttendedStudents = [...localAttendedStudents];
+    const originalHomeworkData = [...homeworkData];
+
+    try {
+      // Optimistic UI update for attendance
+      if (editedStudentStatuses?.attended) {
+        // Mark as attended
+        if (!attendedStudentIds.has(editedStudent.id)) {
+          setLocalAttendedStudents((prev) => [
+            ...prev,
+            {
+              id: editedStudent.id,
+              student: editedStudent,
+              full_name: editedStudent.full_name,
+              student_id: editedStudent.student_id,
+            },
+          ]);
+        }
+      } else {
+        // Mark as absent
+        setLocalAttendedStudents((prev) =>
+          prev.filter((s) => s.id !== editedStudent.id)
+        );
+      }
+
+      // Optimistic UI update for homework
+      if (editedStudentStatuses?.attended && editedStudentStatuses.homework) {
+        setHomeworkData((prev) => {
+          const existingIndex = prev.findIndex(
+            (hw) => hw.student.id === editedStudent.id
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing homework
+            return prev.map((hw) =>
+              hw.student.id === editedStudent.id
+                ? {
+                    ...hw,
+                    completed: editedStudentStatuses.homework === "done",
+                  }
+                : hw
+            );
+          } else {
+            // Add new homework record
+            return [
+              ...prev,
+              {
+                id: Date.now(), // Temporary ID
+                session: sessionID,
+                student: editedStudent,
+                completed: editedStudentStatuses.homework === "done",
+                notes: "",
+              },
+            ];
+          }
+        });
+      }
+
+      // API calls
       const payload = [
         {
           student_id: editedStudent.id,
           attended: editedStudentStatuses?.attended,
         },
       ];
-      try {
-        await api.post(
-          `${djangoApi}session/sessions/${sessionID}/attendance/create/`,
-          payload,
-          {
-            headers: { Authorization: `Bearer ${access}` },
-          }
-        );
 
-        if (attendedStudentIds.has(editedStudent.id)) {
-          await api.post(
-            `${djangoApi}session/sessions/${sessionID}/homework/create/`,
-            [
-              {
-                student_id: editedStudent.id,
-                completed:
-                  editedStudentStatuses?.homework === "done" ? true : false,
-              },
-            ],
+      await api.post(
+        `${djangoApi}session/sessions/${sessionID}/attendance/create/`,
+        payload,
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      if (attendedStudentIds.has(editedStudent.id)) {
+        await api.post(
+          `${djangoApi}session/sessions/${sessionID}/homework/create/`,
+          [
             {
-              headers: { Authorization: `Bearer ${access}` },
-            }
-          );
-        }
-        showToast("Attendance updated", "success");
-        setIsEditeDialogOpen(false);
-        setIsLoading(false);
-      } catch {
-        setIsLoading(false);
-        showToast("couldn't update attendance", "error");
+              student_id: editedStudent.id,
+              completed: editedStudentStatuses?.homework === "done",
+            },
+          ],
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
       }
+
+      // Refresh homework data to get actual IDs
+      if (hashomework) {
+        const res = await api.get(
+          `${djangoApi}session/sessions/${sessionID}/homework/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+        setHomeworkData(res.data);
+      }
+
+      showToast("Attendance updated", "success");
+      setIsEditeDialogOpen(false);
+    } catch {
+      // Rollback on error
+      setLocalAttendedStudents(originalAttendedStudents);
+      setHomeworkData(originalHomeworkData);
+      showToast("Couldn't update attendance", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 

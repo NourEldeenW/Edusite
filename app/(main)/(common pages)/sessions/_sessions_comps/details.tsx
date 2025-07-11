@@ -10,6 +10,8 @@ import {
   User,
   X,
   AlertCircle,
+  Phone,
+  Users,
 } from "lucide-react";
 import { formatUserDate } from "@/lib/formatDate";
 import { Badge } from "@/components/ui/badge";
@@ -72,10 +74,12 @@ export default function SessionDetails({
   // Filter students for this session
   const sessionStudents = useMemo(() => {
     if (!selected_session) return [];
+    const stuIDs = selected_session.students.map((s) => s.id);
     return allStudents.filter(
       (student) =>
-        student.grade.id === selected_session.grade.id &&
-        student.center.id === selected_session.center.id
+        (student.grade.id === selected_session.grade.id &&
+          student.center.id === selected_session.center.id) ||
+        stuIDs.includes(student.id)
     );
   }, [allStudents, selected_session]);
 
@@ -114,7 +118,7 @@ export default function SessionDetails({
       try {
         setLoadingScores(true);
         const response = await api.get(
-          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}sesstion/sessions/${selected_session.id}/scores/`,
+          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/scores/`,
           { headers: { Authorization: `Bearer ${access}` } }
         );
         setTestScores(response.data);
@@ -140,7 +144,7 @@ export default function SessionDetails({
       try {
         setLoadingHomework(true);
         const response = await api.get(
-          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}sesstion/sessions/${selected_session.id}/homework/`,
+          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/homework/`,
           { headers: { Authorization: `Bearer ${access}` } }
         );
         setHomeworkRecords(response.data);
@@ -191,7 +195,7 @@ export default function SessionDetails({
   const attendancePercentage =
     sessionStats && sessionStats.expected_attendance_same_center > 0
       ? Math.round(
-          (sessionStats.total_present /
+          (sessionStats.present_same_center /
             sessionStats.expected_attendance_same_center) *
             100
         )
@@ -334,9 +338,6 @@ export default function SessionDetails({
                       <p className="text-2xl font-bold">
                         {attendancePercentage}%
                       </p>
-                      <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                        Attendance
-                      </p>
                     </div>
                   </div>
                   <div>
@@ -345,7 +346,7 @@ export default function SessionDetails({
                       {sessionStats.expected_attendance_same_center}
                     </p>
                     <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                      Students present
+                      Students present (from {selected_session.center.name})
                     </p>
                   </div>
                 </div>
@@ -354,10 +355,10 @@ export default function SessionDetails({
               <div className="grid grid-cols-4 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {sessionStats.total_present}
+                    {sessionStats.present_same_center}
                   </p>
                   <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Present
+                    Present ({selected_session.center.name})
                   </p>
                 </div>
                 <div className="text-center">
@@ -365,7 +366,7 @@ export default function SessionDetails({
                     {sessionStats.total_absent}
                   </p>
                   <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Absent
+                    Absent ({selected_session.center.name})
                   </p>
                 </div>
                 <div className="text-center">
@@ -384,6 +385,11 @@ export default function SessionDetails({
                     Expected
                   </p>
                 </div>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary mt-3 text-sm">
+                  Total Attendance: {sessionStats.total_present}
+                </p>
               </div>
             </>
           ) : (
@@ -422,20 +428,26 @@ export default function SessionDetails({
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-96">
-            <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="min-w-[700px] w-full">
               <thead>
                 <tr className="border-b border-border-default dark:border-gray-700">
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
                     Student
                   </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
+                    Center
+                  </th>
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
+                    Contact
+                  </th>
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
                     Status
                   </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[80px]">
                     Score
                   </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[120px]">
                     Homework
                   </th>
                 </tr>
@@ -464,15 +476,34 @@ export default function SessionDetails({
                       <tr
                         key={student.id}
                         className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3">
+                        <td className="py-3 min-w-[180px]">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                               <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                             </div>
-                            <span>{student.full_name}</span>
+                            <span className="truncate max-w-[140px]">
+                              {student.full_name}
+                            </span>
                           </div>
                         </td>
-                        <td className="py-3">
+                        <td className="py-3 min-w-[100px]">
+                          {student.center.name}
+                        </td>
+                        <td className="py-3 min-w-[100px]">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="h-3 w-3 text-text-secondary" />
+                              <span>{student.phone_number}</span>
+                            </div>
+                            {student.parent_number && (
+                              <div className="flex items-center gap-2 text-sm text-text-secondary">
+                                <Users className="h-3 w-3" />
+                                <span>{student.parent_number}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 min-w-[100px]">
                           <div className="flex items-center gap-2">
                             <span
                               className={`inline-block w-3 h-3 rounded-full ${
@@ -481,14 +512,14 @@ export default function SessionDetails({
                             <span>{isPresent ? "Present" : "Absent"}</span>
                           </div>
                         </td>
-                        <td className="py-3">
+                        <td className="py-3 min-w-[80px]">
                           {studentScore ? (
                             `${studentScore.score}/${studentScore.max_score}`
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="py-3">
+                        <td className="py-3 min-w-[120px]">
                           {studentHomework ? (
                             <span
                               className={cn(
@@ -499,7 +530,7 @@ export default function SessionDetails({
                               )}>
                               {studentHomework.completed
                                 ? "Completed"
-                                : "Pending"}
+                                : "Not Done"}
                             </span>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -531,19 +562,19 @@ export default function SessionDetails({
               </div>
             ) : testScores.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-[700px] w-full">
                   <thead>
                     <tr className="border-b border-border-default dark:border-gray-700">
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
                         Student
                       </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
                         Score
                       </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
                         Percentage
                       </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[200px]">
                         Notes
                       </th>
                     </tr>
@@ -553,12 +584,16 @@ export default function SessionDetails({
                       <tr
                         key={score.id}
                         className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3">{score.student.full_name}</td>
-                        <td className="py-3">
+                        <td className="py-3 min-w-[180px]">
+                          {score.student.full_name}
+                        </td>
+                        <td className="py-3 min-w-[100px]">
                           {score.score}/{score.max_score}
                         </td>
-                        <td className="py-3">{score.percentage}%</td>
-                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
+                        <td className="py-3 min-w-[100px]">
+                          {score.percentage}%
+                        </td>
+                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400 min-w-[200px]">
                           {score.notes || "-"}
                         </td>
                       </tr>
@@ -592,16 +627,16 @@ export default function SessionDetails({
               </div>
             ) : homeworkRecords.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-[600px] w-full">
                   <thead>
                     <tr className="border-b border-border-default dark:border-gray-700">
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
                         Student
                       </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[120px]">
                         Status
                       </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary">
+                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[200px]">
                         Notes
                       </th>
                     </tr>
@@ -611,8 +646,10 @@ export default function SessionDetails({
                       <tr
                         key={hw.id}
                         className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3">{hw.student.full_name}</td>
-                        <td className="py-3">
+                        <td className="py-3 min-w-[180px]">
+                          {hw.student.full_name}
+                        </td>
+                        <td className="py-3 min-w-[120px]">
                           <span
                             className={cn(
                               "font-medium",
@@ -623,7 +660,7 @@ export default function SessionDetails({
                             {hw.completed ? "Completed" : "Not Completed"}
                           </span>
                         </td>
-                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
+                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400 min-w-[200px]">
                           {hw.notes || "-"}
                         </td>
                       </tr>

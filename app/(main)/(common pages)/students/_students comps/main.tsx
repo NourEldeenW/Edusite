@@ -41,11 +41,13 @@ import {
   Users,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import StatCard from "./cards";
 import TableData from "./tabledata";
+import { AxiosError } from "axios";
 
 const DJANGO_API_URL = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -102,6 +104,17 @@ const initialStudentForm: NewStudentForm = {
   center: { id: 0, name: "" },
 };
 
+interface FormErrors {
+  full_name?: string;
+  phone_number?: string;
+  parent_number?: string;
+  grade?: string;
+  username?: string;
+  password?: string;
+  center?: string;
+  gender?: string;
+}
+
 interface StudentManagementProps {
   access: string;
 }
@@ -122,6 +135,76 @@ export default function StudentManagementPage({
   const [allStudents, setAllStudents] = useState<StudentData[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [isDownLoading, setIsDownloading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+    let isValid = true;
+
+    // Full Name validation
+    if (!newStudentForm.full_name.trim()) {
+      errors.full_name = "Full name is required";
+      isValid = false;
+    } else if (newStudentForm.full_name.trim().length < 3) {
+      errors.full_name = "Full name must be at least 3 characters";
+      isValid = false;
+    }
+
+    // Phone validation
+    const phoneRegex = /^\d{11}$/;
+    if (!newStudentForm.phone_number) {
+      errors.phone_number = "Phone number is required";
+      isValid = false;
+    } else if (!phoneRegex.test(newStudentForm.phone_number)) {
+      errors.phone_number = "Phone number must be 11 digits";
+      isValid = false;
+    }
+
+    // Parent phone validation
+    if (!newStudentForm.parent_number) {
+      errors.parent_number = "Parent's phone number is required";
+      isValid = false;
+    } else if (!phoneRegex.test(newStudentForm.parent_number)) {
+      errors.parent_number = "Parent's phone must be 11 digits";
+      isValid = false;
+    }
+
+    // Grade validation
+    if (newStudentForm.grade.id === 0) {
+      errors.grade = "Please select a grade";
+      isValid = false;
+    }
+
+    // Username validation
+    if (!newStudentForm.username) {
+      errors.username = "Username is required";
+      isValid = false;
+    } else if (newStudentForm.username.length < 4) {
+      errors.username = "Username must be at least 4 characters";
+      isValid = false;
+    } else if (newStudentForm.username.length > 20) {
+      errors.username = "Username cannot exceed 20 characters";
+      isValid = false;
+    }
+
+    // Password validation
+    if (!newStudentForm.password) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (newStudentForm.password.length < 8) {
+      errors.password = "Password must be at least 8 characters";
+      isValid = false;
+    }
+
+    // Center validation
+    if (newStudentForm.center.id === 0) {
+      errors.center = "Please select a center";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
 
   const downloadData = async () => {
     setIsDownloading(true);
@@ -130,7 +213,7 @@ export default function StudentManagementPage({
         `${DJANGO_API_URL}accounts/students/export/`,
         {
           headers: { Authorization: `Bearer ${access}` },
-          responseType: "blob", // this is critical
+          responseType: "blob",
         }
       );
 
@@ -198,6 +281,11 @@ export default function StudentManagementPage({
 
   const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       const requestData = {
         ...newStudentForm,
@@ -208,7 +296,7 @@ export default function StudentManagementPage({
 
       const response = await api.post(
         `${DJANGO_API_URL}accounts/students/create/`,
-        requestData, // Send the data directly as the second argument
+        requestData,
         {
           headers: {
             "Content-Type": "application/json",
@@ -220,21 +308,51 @@ export default function StudentManagementPage({
       if (!response.data) throw new Error(response.statusText);
 
       showToast("Student added successfully", "success");
-      setNewStudentForm({
-        ...initialStudentForm,
-        grade: newStudentForm.grade,
-        center: newStudentForm.center,
-        gender: newStudentForm.gender,
-      });
+      setNewStudentForm(initialStudentForm);
+      setFormErrors({});
       triggerDataRefresh();
-    } catch (error) {
-      console.error("Error creating student:", error);
+    } catch (error: AxiosError | unknown) {
       showToast(
-        error instanceof Error ? error.message : "Operation failed",
+        error instanceof AxiosError
+          ? extractFirstErrorMessage(error.response?.data)
+          : "Operation failed",
         "error"
       );
     }
   };
+
+  function extractFirstErrorMessage(data: unknown): string {
+    if (!data) return "Operation failed";
+
+    if (typeof data === "string") return data;
+
+    if (typeof data === "object" && data !== null) {
+      if (
+        "message" in data &&
+        typeof (data as { message?: unknown }).message === "string"
+      ) {
+        return (data as { message: string }).message;
+      }
+
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          const value = (data as Record<string, unknown>)[key];
+          if (
+            Array.isArray(value) &&
+            value.length > 0 &&
+            typeof value[0] === "string"
+          ) {
+            return value[0];
+          }
+          if (typeof value === "string") {
+            return value;
+          }
+        }
+      }
+    }
+
+    return "Operation failed";
+  }
 
   const handleCreateCenter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -270,6 +388,36 @@ export default function StudentManagementPage({
       username: `stu_${randomStringname}`,
       password: `pass_${randomStringpass}`,
     }));
+    setFormErrors((prev) => ({
+      ...prev,
+      username: undefined,
+      password: undefined,
+    }));
+  };
+
+  const handleFieldChange = (field: keyof NewStudentForm, value: unknown) => {
+    setNewStudentForm((prev) => ({ ...prev, [field]: value }));
+
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleGenderSelect = (gender: string) => {
+    setNewStudentForm((prev) => ({ ...prev, gender }));
+    setIsGenderPopoverOpen(false);
+    if (formErrors.gender) {
+      setFormErrors((prev) => ({ ...prev, gender: undefined }));
+    }
+  };
+
+  const handleGradeSelect = (grade: GradeType) => {
+    setNewStudentForm((prev) => ({ ...prev, grade }));
+    setIsGradePopoverOpen(false);
+    if (formErrors.grade) {
+      setFormErrors((prev) => ({ ...prev, grade: undefined }));
+    }
   };
 
   return (
@@ -365,7 +513,13 @@ export default function StudentManagementPage({
           {/* Add Student Dialog */}
           <Dialog
             open={isAddStudentDialogOpen}
-            onOpenChange={setIsAddStudentDialogOpen}>
+            onOpenChange={(open) => {
+              setIsAddStudentDialogOpen(open);
+              if (!open) {
+                setNewStudentForm(initialStudentForm);
+                setFormErrors({});
+              }
+            }}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
@@ -395,16 +549,23 @@ export default function StudentManagementPage({
                         id="full-name"
                         required
                         value={newStudentForm.full_name}
-                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                          formErrors.full_name
+                            ? "border-error focus:ring-error/50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="Student full name"
                         onChange={(e) =>
-                          setNewStudentForm({
-                            ...newStudentForm,
-                            full_name: e.target.value,
-                          })
+                          handleFieldChange("full_name", e.target.value)
                         }
                       />
                     </div>
+                    {formErrors.full_name && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.full_name}
+                      </p>
+                    )}
                   </div>
 
                   {/* Gender */}
@@ -423,7 +584,11 @@ export default function StudentManagementPage({
                           variant="outline"
                           role="combobox"
                           aria-expanded={isGenderPopoverOpen}
-                          className="w-full justify-between hover:bg-bg-secondary px-3 py-2 h-auto">
+                          className={`w-full justify-between hover:bg-bg-secondary px-3 py-2 h-auto ${
+                            formErrors.gender
+                              ? "border-error focus:ring-error/50"
+                              : "border-gray-300"
+                          }`}>
                           <div className="flex items-center gap-2">
                             <UserRound className="h-4 w-4" />
                             <span>{newStudentForm.gender}</span>
@@ -436,13 +601,7 @@ export default function StudentManagementPage({
                           <CommandList>
                             <CommandItem
                               value="Male"
-                              onSelect={() => {
-                                setNewStudentForm({
-                                  ...newStudentForm,
-                                  gender: "Male",
-                                });
-                                setIsGenderPopoverOpen(false);
-                              }}
+                              onSelect={() => handleGenderSelect("Male")}
                               className="data-[selected=true]:bg-gray-100 data-[selected=true]:text-text-primary py-2">
                               <div className="flex items-center">
                                 <UserRound className="h-4 w-4 mr-2" />
@@ -459,13 +618,7 @@ export default function StudentManagementPage({
                             </CommandItem>
                             <CommandItem
                               value="Female"
-                              onSelect={() => {
-                                setNewStudentForm({
-                                  ...newStudentForm,
-                                  gender: "Female",
-                                });
-                                setIsGenderPopoverOpen(false);
-                              }}
+                              onSelect={() => handleGenderSelect("Female")}
                               className="data-[selected=true]:bg-gray-100 data-[selected=true]:text-text-primary py-2">
                               <div className="flex items-center">
                                 <UserRound className="h-4 w-4 mr-2" />
@@ -484,6 +637,12 @@ export default function StudentManagementPage({
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    {formErrors.gender && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.gender}
+                      </p>
+                    )}
                   </div>
 
                   {/* Grade */}
@@ -502,7 +661,11 @@ export default function StudentManagementPage({
                           variant="outline"
                           role="combobox"
                           aria-expanded={isGradePopoverOpen}
-                          className="w-full justify-between hover:bg-bg-secondary px-3 py-2 h-auto">
+                          className={`w-full justify-between hover:bg-bg-secondary px-3 py-2 h-auto ${
+                            formErrors.grade
+                              ? "border-error focus:ring-error/50"
+                              : "border-gray-300"
+                          }`}>
                           <div className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4" />
                             <span>
@@ -523,13 +686,7 @@ export default function StudentManagementPage({
                               <CommandItem
                                 key={grade.id}
                                 value={grade.name}
-                                onSelect={() => {
-                                  setNewStudentForm({
-                                    ...newStudentForm,
-                                    grade,
-                                  });
-                                  setIsGradePopoverOpen(false);
-                                }}
+                                onSelect={() => handleGradeSelect(grade)}
                                 className="data-[selected=true]:bg-gray-100 data-[selected=true]:text-text-primary py-2">
                                 {grade.name}
                                 <Check
@@ -546,6 +703,12 @@ export default function StudentManagementPage({
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    {formErrors.grade && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.grade}
+                      </p>
+                    )}
                   </div>
 
                   {/* Phone Number */}
@@ -567,16 +730,23 @@ export default function StudentManagementPage({
                         maxLength={11}
                         minLength={11}
                         value={newStudentForm.phone_number}
-                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                          formErrors.phone_number
+                            ? "border-error focus:ring-error/50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="Phone number"
                         onChange={(e) =>
-                          setNewStudentForm({
-                            ...newStudentForm,
-                            phone_number: e.target.value,
-                          })
+                          handleFieldChange("phone_number", e.target.value)
                         }
                       />
                     </div>
+                    {formErrors.phone_number && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.phone_number}
+                      </p>
+                    )}
                   </div>
 
                   {/* Parent's Phone Number */}
@@ -598,16 +768,23 @@ export default function StudentManagementPage({
                         maxLength={11}
                         minLength={11}
                         value={newStudentForm.parent_number}
-                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                          formErrors.parent_number
+                            ? "border-error focus:ring-error/50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="Parent's phone number"
                         onChange={(e) =>
-                          setNewStudentForm({
-                            ...newStudentForm,
-                            parent_number: e.target.value,
-                          })
+                          handleFieldChange("parent_number", e.target.value)
                         }
                       />
                     </div>
+                    {formErrors.parent_number && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.parent_number}
+                      </p>
+                    )}
                   </div>
 
                   {/* Username */}
@@ -627,14 +804,15 @@ export default function StudentManagementPage({
                         required
                         minLength={4}
                         maxLength={20}
-                        className="w-full px-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className={`w-full px-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                          formErrors.username
+                            ? "border-error focus:ring-error/50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="Enter username"
                         value={newStudentForm.username}
                         onChange={(e) =>
-                          setNewStudentForm({
-                            ...newStudentForm,
-                            username: e.target.value,
-                          })
+                          handleFieldChange("username", e.target.value)
                         }
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -651,6 +829,12 @@ export default function StudentManagementPage({
                     <p className="mt-1 text-xs text-text-secondary">
                       Must be 4-20 characters
                     </p>
+                    {formErrors.username && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.username}
+                      </p>
+                    )}
                   </div>
 
                   {/* Password */}
@@ -670,19 +854,26 @@ export default function StudentManagementPage({
                         required
                         minLength={8}
                         value={newStudentForm.password}
-                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                          formErrors.password
+                            ? "border-error focus:ring-error/50"
+                            : "border-gray-300"
+                        }`}
                         placeholder="Create a password"
                         onChange={(e) =>
-                          setNewStudentForm({
-                            ...newStudentForm,
-                            password: e.target.value,
-                          })
+                          handleFieldChange("password", e.target.value)
                         }
                       />
                     </div>
                     <p className="mt-1 text-xs text-text-secondary">
                       Minimum 8 characters
                     </p>
+                    {formErrors.password && (
+                      <p className="mt-1 text-xs text-error flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {formErrors.password}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -702,12 +893,17 @@ export default function StudentManagementPage({
                           <RadioGroupItem
                             value={center.name}
                             id={`center-${center.id}`}
-                            className="text-primary border-gray-300"
+                            className={`text-primary border-gray-300 ${
+                              formErrors.center ? "!border-error" : ""
+                            }`}
                             onClick={() => {
-                              setNewStudentForm({
-                                ...newStudentForm,
-                                center,
-                              });
+                              handleFieldChange("center", center);
+                              if (formErrors.center) {
+                                setFormErrors((prev) => ({
+                                  ...prev,
+                                  center: undefined,
+                                }));
+                              }
                             }}
                           />
                           <Label
@@ -719,6 +915,12 @@ export default function StudentManagementPage({
                       ))}
                     </RadioGroup>
                   </div>
+                  {formErrors.center && (
+                    <p className="mt-1 text-xs text-error flex items-center">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {formErrors.center}
+                    </p>
+                  )}
                 </div>
               </form>
               <Separator className="my-1 bg-text-secondary" />

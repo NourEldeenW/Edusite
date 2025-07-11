@@ -422,9 +422,6 @@ export default function TableData({
         headers: { Authorization: `Bearer ${access}` },
       });
       toast.success("Student deleted successfully!");
-      // setFilteredData((prev) =>
-      //   prev.filter((student) => student.id !== deleteStudentId)
-      // );
       triggerDataRefresh();
     } catch (error) {
       console.error("Failed to delete student:", error);

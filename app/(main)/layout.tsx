@@ -8,6 +8,7 @@ import {
   faBook,
   faSchoolCircleCheck,
   faBuildingUser,
+  faFilePen,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { LayoutDashboard } from "lucide-react";
@@ -102,6 +103,18 @@ const links = {
       icon: (
         <FontAwesomeIcon
           icon={faBuildingUser}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/quizzes",
+      key: "quizzes",
+      name: "Online Quizzes",
+      icon: (
+        <FontAwesomeIcon
+          icon={faFilePen}
           color="#ffff"
           className="w-[22px] h-[22px]"
         />

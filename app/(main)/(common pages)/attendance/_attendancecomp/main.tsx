@@ -6,7 +6,6 @@ import {
   Calendar,
   FileText,
   MapPin,
-  Plus,
   StickyNote,
   Loader2,
   Users,
@@ -35,6 +34,7 @@ import AttendanceForm from "./attendanceForm";
 import { Student } from "@/app/(main)/admin/students/_studentscomp/mainpage";
 import { homework } from "./context";
 import React from "react";
+import AddSessionForm from "../../sessions/_sessions_comps/addSessionForm";
 
 const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -496,11 +496,7 @@ const SessionDetailsView = ({
           Manage and track student attendance for sessions
         </p>
       </div>
-      <Button
-        variant="default"
-        className="gap-2 text-sm bg-primary hover:bg-primary/90 h-10 shadow-md transition-all">
-        <Plus className="w-4 h-4" /> New Session
-      </Button>
+      <AddSessionForm access={access}></AddSessionForm>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

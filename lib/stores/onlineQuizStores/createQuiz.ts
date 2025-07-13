@@ -23,7 +23,7 @@ interface Question {
   choices: Choice[];
 }
 
-interface Center {
+export interface Center {
   center_id: number;
   open_date: string;
   close_date: string;

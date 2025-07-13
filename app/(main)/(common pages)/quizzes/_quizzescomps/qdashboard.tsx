@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/axiosinterceptor";
 import useQuizStore_initial from "@/lib/stores/onlineQuizStores/initialData";
 import { BookOpen, Check, X, AlertCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FilterPopover } from "../../students/_students comps/tabledata";
 import {
   CommandInput,
@@ -14,8 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
-
-const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
 // Date formatting helper
 const formatDate = (dateString: string): string => {
@@ -46,57 +43,21 @@ const getStatusClass = (status: string) => {
   }
 };
 
-export default function QDashboard() {
+export default function QDashboard({
+  isLoading,
+  error,
+}: {
+  isLoading: boolean;
+  error: string | null;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterGradesOpen, setIsFilterGradesOpen] = useState(false);
   const [selectedCenter, setSelectedCenter] = useState<string | number>("all");
   const [selectedGrade, setSelectedGrade] = useState<string | number>("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const {
-    access,
-    allQuizzes,
-    availGrades,
-    updateGrades,
-    updateCenters,
-    updateQuizzes,
-  } = useQuizStore_initial();
+  const { allQuizzes, availGrades } = useQuizStore_initial();
 
   const { updateCurrentMainView } = useViewStore();
-
-  useEffect(() => {
-    if (!access) return;
-
-    const fetch_initials = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const [centersRes, gradesRes, quizzesRes] = await Promise.all([
-          api.get(`${djangoApi}accounts/centers/`, {
-            headers: { Authorization: `Bearer ${access}` },
-          }),
-          api.get(`${djangoApi}accounts/grades/`, {
-            headers: { Authorization: `Bearer ${access}` },
-          }),
-          api.get(`${djangoApi}onlinequiz/quizzes/`, {
-            headers: { Authorization: `Bearer ${access}` },
-          }),
-        ]);
-        updateCenters(centersRes.data);
-        updateGrades(gradesRes.data);
-        updateQuizzes(quizzesRes.data);
-      } catch (error) {
-        console.error("Error fetching initial data:", error);
-        setError("Failed to load quizzes. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetch_initials();
-  }, [access, updateCenters, updateGrades, updateQuizzes]);
 
   const selectedGradeName = useMemo(
     () =>

@@ -407,7 +407,7 @@ export default function MaterialForm({
             </div>
           )}
 
-          <div className="flex justify-between pt-5 border-t border-border-default">
+          <div className="flex justify-center pt-5 border-t border-border-default flex-wrap gap-5">
             <Button
               type="button"
               variant="outline"

@@ -28,11 +28,16 @@ interface StateType {
   allSessions: SessionType[];
   updateSessions: (sessions: SessionType[]) => void;
   deleteSession: (id: number) => void;
+  addSession: (session: SessionType) => void;
 }
 
 const useSessionsStore = create<StateType>((set) => ({
   allSessions: [],
   updateSessions: (sessions) => set({ allSessions: sessions }),
+  addSession: (session) =>
+    set((state) => ({
+      allSessions: [...state.allSessions, session],
+    })),
   deleteSession: (id) =>
     set((state) => ({
       allSessions: state.allSessions.filter((session) => session.id !== id),

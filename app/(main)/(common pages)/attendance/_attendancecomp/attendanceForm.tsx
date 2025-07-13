@@ -41,7 +41,8 @@ const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 interface AttendanceFormProps {
   sessionId: number | null;
   access: string;
-  preventNavigation: (shouldPrevent: boolean) => void; // Add this prop
+  preventNavigation: (shouldPrevent: boolean) => void;
+  refetchSession: (sessionId: number) => void; // Added for targeted refetch
 }
 
 interface AttendanceRecord {
@@ -58,10 +59,11 @@ interface AttendanceRecord {
 export default function AttendanceForm({
   sessionId,
   access,
-  preventNavigation, // Add this prop
+  preventNavigation,
+  refetchSession, // Added for targeted refetch
 }: AttendanceFormProps) {
+  // State declarations
   const [activeTab, setActiveTab] = useState<"qr" | "manual">("qr");
-  const [qrData, setQrData] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [formData, setFormData] = useState({
     parentPhone: "",
@@ -83,24 +85,30 @@ export default function AttendanceForm({
   const [isOnline, setIsOnline] = useState(true);
   const hashomework = useContext(homework);
 
-  // Track the current session ID for localStorage
+  // Refs for caching and tracking
   const currentSessionRef = useRef<number | null>(null);
-
-  // Track if we need to show reload confirmation
   const showReloadWarningRef = useRef(false);
+  const studentIdMapRef = useRef<Map<string, Student>>(new Map());
+  const lastSubmissionRef = useRef<{
+    sessionId: number | null;
+    records: AttendanceRecord[];
+  }>({
+    sessionId: null,
+    records: [],
+  });
 
   const { allStudents } = useContext(AllStudentsContext);
 
-  // Memoized student map for faster lookups
-  const studentIdMap = useMemo(() => {
+  // Build student ID map only when allStudents changes
+  useEffect(() => {
     const map = new Map<string, Student>();
     allStudents.forEach((student) => {
       map.set(student.student_id, student);
     });
-    return map;
+    studentIdMapRef.current = map;
   }, [allStudents]);
 
-  // NEW: Prevent navigation when there are unsaved records
+  // Prevent navigation when unsaved records exist
   useEffect(() => {
     preventNavigation(attendanceRecords.length > 0);
   }, [attendanceRecords, preventNavigation]);
@@ -151,7 +159,7 @@ export default function AttendanceForm({
     }
   }, [sessionId]);
 
-  // Save attendance records
+  // Save attendance records only when they change
   useEffect(() => {
     if (sessionId && attendanceRecords.length > 0) {
       localStorage.setItem(
@@ -179,9 +187,18 @@ export default function AttendanceForm({
     };
   }, []);
 
-  // Submit attendance records
+  // Optimized attendance submission
   const submitAttendance = useCallback(async () => {
     if (!sessionId || attendanceRecords.length === 0 || isSubmitting) return;
+
+    // Check if we've already submitted these exact records
+    if (
+      lastSubmissionRef.current.sessionId === sessionId &&
+      JSON.stringify(lastSubmissionRef.current.records) ===
+        JSON.stringify(attendanceRecords)
+    ) {
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -223,6 +240,15 @@ export default function AttendanceForm({
         setAttendanceRecords([]);
         localStorage.removeItem(`attendance_${sessionId}`);
         showReloadWarningRef.current = false;
+
+        // Update last submission reference
+        lastSubmissionRef.current = {
+          sessionId,
+          records: [...attendanceRecords],
+        };
+
+        // Refetch only this specific session
+        refetchSession(sessionId);
       } else {
         throw new Error(`Unexpected status: ${response.status}`);
       }
@@ -233,21 +259,19 @@ export default function AttendanceForm({
       setIsSubmitting(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, attendanceRecords, access, hashomework]);
+  }, [sessionId, attendanceRecords, access, hashomework, refetchSession]);
 
-  // Auto-submit when online
+  // Auto-submit when online and records change
   useEffect(() => {
     if (isOnline && attendanceRecords.length > 0) {
-      submitAttendance();
+      // Debounce auto-submit to prevent rapid submissions
+      const timer = setTimeout(() => {
+        submitAttendance();
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
   }, [isOnline, attendanceRecords, submitAttendance]);
-
-  // Handle QR data
-  useEffect(() => {
-    if (!qrData) return;
-    handleQRSubmit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrData]);
 
   // QR scanner handlers
   const startScanner = useCallback(() => {
@@ -257,7 +281,6 @@ export default function AttendanceForm({
 
   const stopScanner = useCallback(() => {
     setIsScanning(false);
-    setQrData(null);
   }, []);
 
   // Form input handler
@@ -269,28 +292,29 @@ export default function AttendanceForm({
     []
   );
 
-  // Manual submission handler
+  // Optimized manual submission handler
   const handleManualSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
 
       let foundStudents: Student[] = [];
+      const { studentId, studentPhone, parentPhone } = formData;
 
-      // Search priority
-      if (formData.studentId) {
-        const student = studentIdMap.get(formData.studentId);
+      // Search using cached map
+      if (studentId) {
+        const student = studentIdMapRef.current.get(studentId);
         if (student) foundStudents = [student];
       }
 
-      if (foundStudents.length === 0 && formData.studentPhone) {
+      if (foundStudents.length === 0 && studentPhone) {
         foundStudents = allStudents.filter(
-          (student) => student.phone_number === formData.studentPhone
+          (student) => student.phone_number === studentPhone
         );
       }
 
-      if (foundStudents.length === 0 && formData.parentPhone) {
+      if (foundStudents.length === 0 && parentPhone) {
         foundStudents = allStudents.filter(
-          (student) => student.parent_number === formData.parentPhone
+          (student) => student.parent_number === parentPhone
         );
       }
 
@@ -307,7 +331,7 @@ export default function AttendanceForm({
       // Clear form
       setFormData({ parentPhone: "", studentPhone: "", studentId: "" });
     },
-    [formData, allStudents, studentIdMap]
+    [formData, allStudents]
   );
 
   // Student selection handler
@@ -341,21 +365,31 @@ export default function AttendanceForm({
     []
   );
 
-  // QR submission handler
-  const handleQRSubmit = useCallback(() => {
-    if (!qrData) return;
+  // QR data handler with deduplication
+  const handleQRData = useCallback(
+    (data: string | null) => {
+      if (!data) return;
 
-    const student = studentIdMap.get(qrData);
-    if (student) {
-      setSelectedStudent(student);
-      setIsConfirmationDialogOpen(true);
-      setQrData(null);
-    } else {
-      showToast("Student not found", "error");
-    }
+      const student = studentIdMapRef.current.get(data);
+      if (student) {
+        // Check if already recorded in this session
+        const isAlreadyRecorded = attendanceRecords.some(
+          (record) => record.id === student.id
+        );
 
-    setQrData(null);
-  }, [qrData, studentIdMap]);
+        if (isAlreadyRecorded) {
+          showToast("Attendance already recorded for this student", "error");
+          return;
+        }
+
+        setSelectedStudent(student);
+        setIsConfirmationDialogOpen(true);
+      } else {
+        showToast("Student not found", "error");
+      }
+    },
+    [attendanceRecords]
+  );
 
   // Clear records handler
   const clearAttendanceRecords = useCallback(() => {
@@ -365,6 +399,7 @@ export default function AttendanceForm({
     }
     showToast("Records cleared", "success");
     showReloadWarningRef.current = false;
+    lastSubmissionRef.current = { sessionId: null, records: [] };
   }, [sessionId]);
 
   // Memoized components
@@ -388,8 +423,8 @@ export default function AttendanceForm({
                   <BarcodeScanner
                     width="100%"
                     height="100%"
-                    onUpdate={(_, res) => res && setQrData(res.getText())}
-                    delay={150}
+                    onUpdate={(_, res) => res && handleQRData(res.getText())}
+                    delay={500} // Increased delay to reduce processing
                   />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                     <div className="border-[3px] border-white/80 rounded-xl w-[55%] max-w-[280px] aspect-square relative shadow-[0_0_0_100vmax_rgba(0,0,0,0.7)]"></div>
@@ -426,7 +461,7 @@ export default function AttendanceForm({
         </div>
       </div>
     ),
-    [isScanning, startScanner, stopScanner]
+    [isScanning, startScanner, stopScanner, handleQRData]
   );
 
   const ManualEntryForm = useMemo(
@@ -536,12 +571,14 @@ export default function AttendanceForm({
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {attendanceRecords.map((record) => (
           <div
-            key={`record-${record.id}-${record.timestamp}`}
+            key={`${record.id}-${record.timestamp}`}
             className="p-4 border border-gray-200 rounded-lg flex flex-wrap items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-[100px]">
               <div className="flex flex-wrap justify-between items-start gap-2">
-                <h4 className="font-medium text-gray-800">{record.name}</h4>
+                <h4 className="font-medium text-gray-800 truncate">
+                  {record.name}
+                </h4>
                 <span className="text-sm text-gray-500 whitespace-nowrap">
                   {new Date(record.timestamp).toLocaleTimeString([], {
                     hour: "2-digit",

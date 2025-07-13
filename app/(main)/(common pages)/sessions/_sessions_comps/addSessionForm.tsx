@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
+import useSessionsStore from "@/lib/stores/SessionsStores/allSessionsStore";
 
 export default function AddSessionForm({ access }: { access: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,6 +48,8 @@ export default function AddSessionForm({ access }: { access: string }) {
     has_homework: false,
     has_test: false,
   };
+
+  const { addSession } = useSessionsStore();
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -115,11 +118,12 @@ export default function AddSessionForm({ access }: { access: string }) {
 
     try {
       setLoading(true);
-      await api.post(
+      const res = await api.post(
         `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/create/`,
         payload,
         { headers: { Authorization: `Bearer ${access}` } }
       );
+      addSession(res.data);
       showToast("Session created successfully", "success");
       setFormData(initialFormData);
       setDate(new Date());

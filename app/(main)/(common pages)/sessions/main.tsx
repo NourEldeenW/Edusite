@@ -14,7 +14,6 @@ import {
   Clock,
   Edit,
   Eye,
-  MapPin,
   School,
   Trash2,
   X,
@@ -100,6 +99,26 @@ export default function Main({ access }: { access: string }) {
     });
   }, [sessions, searchQuery, selectedCenter, selectedGrade]);
 
+  // Precompute attendance data
+  const attendanceData = useMemo(() => {
+    const data: Record<number, { total: number; attended: number }> = {};
+
+    sessions.forEach((session) => {
+      const total = students.filter(
+        (student) =>
+          student.grade.id === session.grade?.id &&
+          student.center.id === session.center?.id
+      ).length;
+
+      data[session.id] = {
+        total,
+        attended: session.students.length,
+      };
+    });
+
+    return data;
+  }, [sessions, students]);
+
   useEffect(() => {
     const fetchSessions = async () => {
       try {
@@ -114,7 +133,6 @@ export default function Main({ access }: { access: string }) {
           ),
         ]);
         setStudents(studentsres.data);
-
         setSessions(sessionsres.data);
       } catch (error) {
         console.error("Error fetching sessions:", error);
@@ -131,17 +149,18 @@ export default function Main({ access }: { access: string }) {
   if (currentView === "main") {
     return (
       <>
-        <div className="flex flex-col justify-between gap-4 mb-6 md:flex-row md:items-center">
+        <div className="flex flex-col justify-between gap-4 mb-8 md:flex-row md:items-center">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
+            <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl dark:text-white">
               Sessions Management
             </h1>
-            <p className="text-sm text-gray-500 sm:text-base">
+            <p className="text-sm text-gray-500 sm:text-base dark:text-gray-400">
               View and manage all your teaching sessions
             </p>
           </div>
           <AddSessionForm access={access} />
         </div>
+
         <div
           className="grid gap-5 mb-8"
           style={{
@@ -152,26 +171,27 @@ export default function Main({ access }: { access: string }) {
             value={sessions.length}
             title="Total Sessions"
             icon={<CalendarDays className="text-blue-600" />}
-            iconContainerClass="bg-blue-100"
-            valueClass="text-blue-700"
+            iconContainerClass="bg-blue-100 dark:bg-blue-900/30"
+            valueClass="text-blue-700 dark:text-blue-300"
           />
           <StatCard
             value={centers.length}
             title="Learning Centers"
             icon={<School className="text-emerald-600" />}
-            iconContainerClass="bg-emerald-100"
-            valueClass="text-emerald-700"
+            iconContainerClass="bg-emerald-100 dark:bg-emerald-900/30"
+            valueClass="text-emerald-700 dark:text-emerald-300"
           />
         </div>
-        <div className="w-full p-4 sm:p-6 bg-bg-secondary rounded-2xl border border-border-default">
-          <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default flex flex-col md:flex-row gap-4 mb-6">
+
+        <div className="w-full p-4 sm:p-6 bg-bg-secondary rounded-2xl border border-border-default dark:bg-gray-900">
+          <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
             {/* Search input */}
             <div className="flex-grow">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by session title..."
-                className="w-full"
+                className="w-full bg-white dark:bg-gray-800"
               />
             </div>
 
@@ -183,10 +203,12 @@ export default function Main({ access }: { access: string }) {
                   label={selectedGradeName}
                   openState={isFilterGradesOpen}
                   onOpenChange={setIsFilterGradesOpen}>
-                  <Command>
+                  <Command className="rounded-lg border border-border-default dark:border-gray-700">
                     <CommandInput placeholder="Search grade..." />
-                    <CommandList>
-                      <CommandItem onSelect={() => setSelectedGrade("all")}>
+                    <CommandList className="max-h-48">
+                      <CommandItem
+                        onSelect={() => setSelectedGrade("all")}
+                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
                         All Grades
                       </CommandItem>
                       {grades?.map((grade) => (
@@ -195,7 +217,8 @@ export default function Main({ access }: { access: string }) {
                           onSelect={() => {
                             setSelectedGrade(grade.id.toString());
                             setIsFilterGradesOpen(false);
-                          }}>
+                          }}
+                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
                           {grade.name}
                           {grade.id.toString() === selectedGrade && (
                             <Check className="ml-auto" size={16} />
@@ -211,10 +234,12 @@ export default function Main({ access }: { access: string }) {
                   label={selectedCenterName}
                   openState={isFilterCentersOpen}
                   onOpenChange={setIsFilterCentersOpen}>
-                  <Command>
+                  <Command className="rounded-lg border border-border-default dark:border-gray-700">
                     <CommandInput placeholder="Search center..." />
-                    <CommandList>
-                      <CommandItem onSelect={() => setSelectedCenter("all")}>
+                    <CommandList className="max-h-48">
+                      <CommandItem
+                        onSelect={() => setSelectedCenter("all")}
+                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
                         All Centers
                       </CommandItem>
                       {centers?.map((center) => (
@@ -223,7 +248,8 @@ export default function Main({ access }: { access: string }) {
                           onSelect={() => {
                             setSelectedCenter(center.id.toString());
                             setIsFilterCentersOpen(false);
-                          }}>
+                          }}
+                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
                           {center.name}
                           {center.id.toString() === selectedCenter && (
                             <Check className="ml-auto" size={16} />
@@ -245,121 +271,182 @@ export default function Main({ access }: { access: string }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredSessions.length > 0 ? (
-              filteredSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-5 sm:p-6 relative transition-all hover:shadow-lg min-w-0">
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="min-w-0">
-                      <span className="inline-block bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-medium px-3 py-1 rounded-full mb-3">
-                        {session.grade?.name || "No Grade"}
-                      </span>
-                      <h3 className="text-lg sm:text-xl font-bold text-text-primary dark:text-dark-text truncate">
-                        {session.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2 text-text-secondary dark:text-dark-text-secondary">
-                        <School className="w-4 h-4 flex-shrink-0" />
-                        <p className="text-sm line-clamp-2 break-words">
-                          {session.notes || "No description available"}
-                        </p>
+              filteredSessions.map((session) => {
+                const { total, attended } = attendanceData[session.id] || {
+                  total: 0,
+                  attended: 0,
+                };
+                const attendanceRate =
+                  total > 0 ? Math.round((attended / total) * 100) : 0;
+
+                return (
+                  <div
+                    key={session.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default dark:border-gray-700 p-5 sm:p-6 relative transition-all hover:shadow-lg min-w-0 h-full flex flex-col">
+                    {/* Header section */}
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="inline-block bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-medium px-3 py-1 rounded-full">
+                            {session.grade?.name || "No Grade"}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {session.date
+                              ? formatUserDate(session.date, false)
+                              : "No date"}
+                          </span>
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white truncate">
+                          {session.title}
+                        </h3>
+                        <div className="mt-2 text-text-secondary dark:text-gray-400">
+                          <p className="text-sm line-clamp-3 break-words">
+                            {session.notes || "No description available"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          className="p-2 text-text-secondary dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-label="Edit session">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-2 text-text-secondary dark:text-gray-400 hover:text-destructive transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-label="Delete session">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        className="p-2 text-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                        aria-label="Edit session">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-text-secondary dark:text-dark-text-secondary hover:text-destructive transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                        aria-label="Delete session">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
 
-                  <div className="mt-5 flex gap-3">
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-text-secondary dark:text-dark-text-secondary mt-0.5 flex-shrink-0" />
-                      <span className="font-medium break-words">
-                        {session.center?.name || "No center assigned"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-text-secondary dark:text-dark-text-secondary mt-0.5 flex-shrink-0" />
-                      <span className="font-medium">
-                        {session.date
-                          ? formatUserDate(session.date, false)
-                          : "No schedule"}
-                      </span>
-                    </div>
-                  </div>
+                    {/* Separator */}
+                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
 
-                  <div className="mt-6 flex flex-col sm:flex-row justify-between items-start gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10">
-                        <svg
-                          className="progress-ring w-10 h-10"
-                          width="40"
-                          height="40">
-                          <circle
-                            className="progress-ring__circle"
-                            stroke="#e5e7eb"
-                            strokeWidth="3"
-                            fill="transparent"
-                            r="16"
-                            cx="20"
-                            cy="20"
-                          />
-                          <circle
-                            className="progress-ring__circle"
-                            stroke="#10b981"
-                            strokeWidth="3"
-                            strokeDasharray="100"
-                            strokeDashoffset="25"
-                            fill="transparent"
-                            r="16"
-                            cx="20"
-                            cy="20"
-                          />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">
-                          {session.students.length || 0}/
-                          {students.filter(
-                            (student) =>
-                              student.grade.id === session.grade?.id &&
-                              student.center.id === session.center?.id
-                          ).length || 0}
-                        </span>
+                    {/* Details section */}
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Center
+                          </h4>
+                          <p className="font-medium break-words mt-1">
+                            {session.center?.name || "No center assigned"}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-sm">Attendance rate</span>
+
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Time
+                          </h4>
+                          <p className="font-medium mt-1">
+                            {session.date
+                              ? formatUserDate(session.date, false)
+                              : "No time set"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setCurrentView("sessionDetails");
-                        setSId(session);
-                      }}
-                      className="text-primary hover:text-primary-dark flex items-center gap-1.5 font-medium px-3 py-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                      <Eye className="w-4 h-4" />
-                      <span>View Details</span>
-                    </button>
+                    {/* Separator */}
+                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
+
+                    {/* Attendance section */}
+                    <div className="mt-auto">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-14 h-14">
+                            <svg
+                              className="progress-ring w-14 h-14"
+                              width="56"
+                              height="56"
+                              viewBox="0 0 56 56">
+                              <circle
+                                className="progress-ring__circle"
+                                stroke="#e5e7eb"
+                                strokeWidth="4"
+                                fill="transparent"
+                                r="22"
+                                cx="28"
+                                cy="28"
+                              />
+                              <circle
+                                className="progress-ring__circle"
+                                stroke={
+                                  attendanceRate >= 70
+                                    ? "#10b981"
+                                    : attendanceRate >= 40
+                                    ? "#f59e0b"
+                                    : "#ef4444"
+                                }
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeDasharray="138"
+                                strokeDashoffset={
+                                  (138 * (100 - attendanceRate)) / 100
+                                }
+                                fill="transparent"
+                                r="22"
+                                cx="28"
+                                cy="28"
+                                transform="rotate(-90 28 28)"
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                              {attendanceRate}%
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Attendance
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              {attended} of {total} students
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setCurrentView("sessionDetails");
+                            setSId(session);
+                          }}
+                          className="text-primary hover:text-primary-dark flex items-center gap-1.5 font-medium px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                          <Eye className="w-5 h-5" />
+                          <span>View Details</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <div className="col-span-full py-10 text-center">
-                <div className="text-gray-400 dark:text-gray-500 mb-2">
-                  <CalendarDays className="w-12 h-12 mx-auto" />
+              <div className="col-span-full py-16 text-center rounded-xl border border-border-default dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="text-gray-400 dark:text-gray-500 mb-4">
+                  <CalendarDays className="w-16 h-16 mx-auto" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300">
                   No sessions found
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Try adjusting your search or filters
+                <p className="text-md text-gray-500 dark:text-gray-400 mt-2 mb-6 max-w-md mx-auto">
+                  Try adjusting your search criteria or create a new session
                 </p>
+                <Button
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="mr-3">
+                  Clear Filters
+                </Button>
+                <AddSessionForm access={access} />
               </div>
             )}
           </div>

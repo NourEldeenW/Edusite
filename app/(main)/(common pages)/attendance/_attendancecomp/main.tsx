@@ -17,6 +17,7 @@ import {
   useState,
   createContext,
   useCallback,
+  useRef,
 } from "react";
 import { api } from "@/lib/axiosinterceptor";
 import { Label } from "@/components/ui/label";
@@ -67,13 +68,13 @@ interface SessionType {
 interface AllStudentsContextType {
   allStudents: Student[];
   setAllStudents: React.Dispatch<React.SetStateAction<Student[]>>;
-  refetchsessions: () => void;
+  refetchSession: (sessionId: number) => void;
 }
 
 export const AllStudentsContext = createContext<AllStudentsContextType>({
   allStudents: [],
   setAllStudents: () => {},
-  refetchsessions: () => {},
+  refetchSession: () => {},
 });
 
 // Memoized Session Info Component
@@ -154,6 +155,7 @@ const SessionInfoSection = React.memo(
 );
 
 SessionInfoSection.displayName = "SessionInfoSection";
+
 // Memoized Grade Filter Component
 const GradeFilter = React.memo(
   ({
@@ -196,6 +198,7 @@ const GradeFilter = React.memo(
 );
 
 GradeFilter.displayName = "GradeFilter";
+
 // Memoized Session Filter Component
 const SessionFilter = React.memo(
   ({
@@ -257,6 +260,7 @@ const SessionFilter = React.memo(
 );
 
 SessionFilter.displayName = "SessionFilter";
+
 // Main Component
 export default function AttendanceManagementPage({
   access,
@@ -272,12 +276,12 @@ export default function AttendanceManagementPage({
   const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [hasHomework, setHasHomework] = useState(false);
-  const [refCounter, setRefCounter] = useState(0);
   const [preventNavigation, setPreventNavigation] = useState(false);
 
-  const refetchsessions = useCallback(() => {
-    setRefCounter((prev) => prev + 1);
-  }, []);
+  // Cache for fetched data
+  const sessionCache = useRef<Map<number, SessionType>>(new Map());
+  const studentsCache = useRef<Map<number, Student[]>>(new Map());
+  const initialDataFetched = useRef(false);
 
   // Memoized computations
   const filteredSessions = useMemo(() => {
@@ -319,13 +323,13 @@ export default function AttendanceManagementPage({
       );
       return;
     }
-
     setMainView("SESSIONDETAILS_TAB");
-    refetchsessions();
-  }, [preventNavigation, refetchsessions]);
+  }, [preventNavigation]);
 
-  // Fetch sessions and grades
+  // Fetch initial data (sessions and grades) once
   useEffect(() => {
+    if (initialDataFetched.current) return;
+
     const controller = new AbortController();
     setIsLoading(true);
 
@@ -344,6 +348,13 @@ export default function AttendanceManagementPage({
 
         setSessions(sessionsRes.data);
         setAvailGrades(gradesRes.data);
+
+        // Cache sessions
+        sessionsRes.data.forEach((session: SessionType) => {
+          sessionCache.current.set(session.id, session);
+        });
+
+        initialDataFetched.current = true;
       } catch (error) {
         if (!controller.signal.aborted) {
           console.error("Fetch error:", error);
@@ -356,11 +367,18 @@ export default function AttendanceManagementPage({
     fetchData();
 
     return () => controller.abort();
-  }, [access, refCounter]);
+  }, [access]);
 
-  // Fetch students when grade changes
+  // Fetch students for grade only if not in cache
   useEffect(() => {
     if (!selectedGrade) return;
+
+    // Check cache first
+    const cachedStudents = studentsCache.current.get(selectedGrade);
+    if (cachedStudents) {
+      setAllStudents(cachedStudents);
+      return;
+    }
 
     const fetchStudents = async () => {
       try {
@@ -368,6 +386,9 @@ export default function AttendanceManagementPage({
           `${djangoApi}accounts/students/?grade_id=${selectedGrade}`,
           { headers: { Authorization: `Bearer ${access}` } }
         );
+
+        // Update cache and state
+        studentsCache.current.set(selectedGrade, res.data);
         setAllStudents(res.data);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -386,21 +407,50 @@ export default function AttendanceManagementPage({
   const handleSessionChange = useCallback(
     async (sessionId: number) => {
       setSelectedSessionId(sessionId);
-      setIsSessionLoading(true);
 
+      // Check cache first
+      const cachedSession = sessionCache.current.get(sessionId);
+      if (cachedSession && cachedSession.students.length > 0) {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? cachedSession : s))
+        );
+        return;
+      }
+
+      setIsSessionLoading(true);
       try {
         const res = await api.get(
           `${djangoApi}session/sessions/${sessionId}/`,
-          {
-            headers: { Authorization: `Bearer ${access}` },
-          }
+          { headers: { Authorization: `Bearer ${access}` } }
         );
 
+        // Update cache and state
+        sessionCache.current.set(sessionId, res.data);
         setSessions((prev) =>
-          prev.map((session) => (session.id === sessionId ? res.data : session))
+          prev.map((s) => (s.id === sessionId ? res.data : s))
         );
       } finally {
         setIsSessionLoading(false);
+      }
+    },
+    [access]
+  );
+
+  const refetchSession = useCallback(
+    async (sessionId: number) => {
+      try {
+        const res = await api.get(
+          `${djangoApi}session/sessions/${sessionId}/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+
+        // Update cache and state
+        sessionCache.current.set(sessionId, res.data);
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? res.data : s))
+        );
+      } catch (error) {
+        console.error("Error refetching session:", error);
       }
     },
     [access]
@@ -411,9 +461,9 @@ export default function AttendanceManagementPage({
     () => ({
       allStudents,
       setAllStudents,
-      refetchsessions,
+      refetchSession,
     }),
-    [allStudents, refetchsessions]
+    [allStudents, refetchSession]
   );
 
   const homeworkValue = useMemo(() => hasHomework, [hasHomework]);
@@ -449,6 +499,7 @@ export default function AttendanceManagementPage({
             selectedSessionId={selectedSessionId}
             access={access}
             preventNavigation={setPreventNavigation}
+            refetchSession={refetchSession}
           />
         )}
       </homework.Provider>
@@ -553,6 +604,7 @@ const SessionDetailsView = ({
 );
 
 SessionDetailsView.displayName = "SessionDetailsView";
+
 const TakingAttendanceView = ({
   navigateBack,
   selectedSessionDetails,
@@ -560,6 +612,7 @@ const TakingAttendanceView = ({
   selectedSessionId,
   access,
   preventNavigation,
+  refetchSession,
 }: {
   navigateBack: () => void;
   selectedSessionDetails: SessionType | null | undefined;
@@ -567,6 +620,7 @@ const TakingAttendanceView = ({
   selectedSessionId: number | null;
   access: string;
   preventNavigation: (shouldPrevent: boolean) => void;
+  refetchSession: (sessionId: number) => void;
 }) => (
   <div className="flex flex-col h-full">
     <div className="flex flex-col gap-4 mb-6">
@@ -617,12 +671,14 @@ const TakingAttendanceView = ({
         sessionId={selectedSessionId}
         access={access}
         preventNavigation={preventNavigation}
+        refetchSession={refetchSession}
       />
     </div>
   </div>
 );
 
 TakingAttendanceView.displayName = "TakingAttendanceView";
+
 // Additional helper components
 const LoadingSkeleton = () => (
   <div className="flex flex-col h-full p-6">
@@ -658,6 +714,7 @@ const LoadingSkeleton = () => (
 );
 
 LoadingSkeleton.displayName = "LoadingSkeleton";
+
 const EmptySessionView = ({
   onTakeAttendance,
 }: {
@@ -683,6 +740,7 @@ const EmptySessionView = ({
 );
 
 EmptySessionView.displayName = "EmptySessionView";
+
 const SelectSessionPrompt = () => (
   <div className="flex flex-col items-center justify-center h-full py-12">
     <div className="bg-gray-100 rounded-full p-5 mb-6">

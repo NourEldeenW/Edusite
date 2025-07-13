@@ -80,7 +80,7 @@ export default function WeekList({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
           {Array.from({ length: 4 }).map((_, index) => (
             <WeekCardSkeleton key={index} />
           ))}
@@ -107,7 +107,7 @@ export default function WeekList({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
           {filteredWeeks.map((week) => {
             const weekMaterials = materials.filter((m) => m.week === week.id);
             const MAX_VISIBLE_MATERIALS = 6;

@@ -8,19 +8,29 @@ import {
   BookOpen,
   School,
   User,
-  X,
   AlertCircle,
   Phone,
   Users,
+  Edit,
+  Save,
+  Ban,
 } from "lucide-react";
 import { formatUserDate } from "@/lib/formatDate";
 import { Badge } from "@/components/ui/badge";
 import useAvail_Grades_CentersStore from "@/lib/stores/SessionsStores/store";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/axiosinterceptor";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface SessionStats {
   session_id: number;
@@ -67,28 +77,31 @@ export default function SessionDetails({
   const [testScores, setTestScores] = useState<TestScore[]>([]);
   const [homeworkRecords, setHomeworkRecords] = useState<HomeworkRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [testScoreSearch, setTestScoreSearch] = useState("");
+  const [homeworkSearch, setHomeworkSearch] = useState("");
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingScores, setLoadingScores] = useState(true);
   const [loadingHomework, setLoadingHomework] = useState(true);
+  const [isSetMaxScoreDialogOpen, setIsSetMaxScoreDialogOpen] = useState(false);
+  const [newMaxScore, setNewMaxScore] = useState("");
+  const [isCreatingScores, setIsCreatingScores] = useState(false);
+  const [editingScoreId, setEditingScoreId] = useState<number | null>(null);
+  const [editableScore, setEditableScore] = useState<{
+    score: string;
+    notes: string;
+  }>({ score: "", notes: "" });
 
-  // Filter students for this session
-  const sessionStudents = useMemo(() => {
-    if (!selected_session) return [];
-    const stuIDs = selected_session.students.map((s) => s.id);
-    return allStudents.filter(
-      (student) =>
-        (student.grade.id === selected_session.grade.id &&
-          student.center.id === selected_session.center.id) ||
-        stuIDs.includes(student.id)
-    );
-  }, [allStudents, selected_session]);
+  const sessionStudents = allStudents.filter(
+    (student) =>
+      selected_session?.students.some((s) => s.id === student.id) ||
+      (student.grade.id === selected_session?.grade.id &&
+        student.center.id === selected_session?.center.id)
+  );
 
-  // Format date
   const formattedDate = selected_session
     ? formatUserDate(selected_session.date, false)
     : "";
 
-  // Fetch session stats
   useEffect(() => {
     if (!selected_session) return;
 
@@ -110,7 +123,6 @@ export default function SessionDetails({
     fetchStats();
   }, [selected_session, access]);
 
-  // Fetch test scores
   useEffect(() => {
     if (!selected_session) return;
 
@@ -136,7 +148,6 @@ export default function SessionDetails({
     }
   }, [selected_session, access]);
 
-  // Fetch homework records
   useEffect(() => {
     if (!selected_session) return;
 
@@ -161,6 +172,163 @@ export default function SessionDetails({
       setLoadingHomework(false);
     }
   }, [selected_session, access]);
+
+  const handleEditScore = (score: TestScore) => {
+    setEditingScoreId(score.id);
+    setEditableScore({ score: score.score, notes: score.notes });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingScoreId(null);
+    setEditableScore({ score: "", notes: "" });
+  };
+
+  const handleSaveScore = async (scoreId: number) => {
+    const originalScore = testScores.find((s) => s.id === scoreId);
+    if (!originalScore) return;
+
+    const updatedScores = testScores.map((s) =>
+      s.id === scoreId ? { ...s, ...editableScore } : s
+    );
+    setTestScores(updatedScores);
+    setEditingScoreId(null);
+
+    try {
+      const payload = [
+        {
+          student_id: originalScore.student.id,
+          score: parseFloat(editableScore.score),
+          max_score: parseFloat(originalScore.max_score),
+          notes: editableScore.notes,
+        },
+      ];
+
+      const response = await api.post(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session?.id}/scores/create/`,
+        payload,
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      const updatedScore = response.data.results[0];
+      setTestScores((prev) =>
+        prev.map((score) =>
+          score.id === scoreId
+            ? {
+                ...score,
+                ...updatedScore,
+                percentage:
+                  updatedScore.percentage ||
+                  (parseFloat(updatedScore.score) /
+                    parseFloat(updatedScore.max_score)) *
+                    100,
+              }
+            : score
+        )
+      );
+    } catch (error) {
+      console.error("Failed to save score:", error);
+      setTestScores(testScores);
+    } finally {
+      handleCancelEdit();
+    }
+  };
+
+  const setMaxScoreForSession = async (maxScore: number) => {
+    if (!selected_session) return;
+
+    try {
+      setIsCreatingScores(true);
+
+      // Set max score using new API endpoint
+      await api.put(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/set-max-score/`,
+        { test_max_score: maxScore },
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      // Create/update scores for attended students
+      const attendedStudentIds = selected_session.students.map((s) => s.id);
+      const payload = attendedStudentIds.map((student_id) => {
+        const existingScore = testScores.find(
+          (score) => score.student.id === student_id
+        );
+
+        return existingScore
+          ? {
+              id: existingScore.id,
+              student_id,
+              score: parseFloat(existingScore.score),
+              max_score: maxScore,
+              notes: existingScore.notes,
+            }
+          : {
+              student_id,
+              score: 0,
+              max_score: maxScore,
+              notes: "",
+            };
+      });
+
+      await api.post(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/scores/create/`,
+        payload,
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      // Refresh scores after update
+      const scoresResponse = await api.get(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/scores/`,
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      setTestScores(scoresResponse.data);
+      setIsSetMaxScoreDialogOpen(false);
+      setNewMaxScore("");
+    } catch (error) {
+      console.error("Failed to set max score:", error);
+    } finally {
+      setIsCreatingScores(false);
+    }
+  };
+
+  const testScoresForTable = selected_session
+    ? [
+        ...testScores,
+        ...selected_session.students
+          .filter(
+            (student) =>
+              !testScores.some((score) => score.student.id === student.id)
+          )
+          .map((student) => ({
+            id: -student.id,
+            student: {
+              id: student.id,
+              full_name: student.full_name,
+            },
+            score: "0",
+            max_score: "0",
+            percentage: 0,
+            notes: "No score recorded",
+          })),
+      ]
+    : [];
+
+  const filteredStudents = sessionStudents.filter(
+    (student) =>
+      student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.phone_number?.includes(searchQuery) ||
+      student.parent_number?.includes(searchQuery)
+  );
+
+  const filteredTestScores = testScoresForTable.filter((score) =>
+    score.student.full_name
+      .toLowerCase()
+      .includes(testScoreSearch.toLowerCase())
+  );
+
+  const filteredHomeworkRecords = homeworkRecords.filter((hw) =>
+    hw.student.full_name.toLowerCase().includes(homeworkSearch.toLowerCase())
+  );
 
   if (!selected_session) {
     return (
@@ -191,7 +359,6 @@ export default function SessionDetails({
     );
   }
 
-  // Calculate attendance percentage
   const attendancePercentage =
     sessionStats && sessionStats.expected_attendance_same_center > 0
       ? Math.round(
@@ -200,90 +367,89 @@ export default function SessionDetails({
             100
         )
       : 0;
-
-  // Calculate stroke dashoffset for the progress ring
   const circumference = 2 * Math.PI * 42;
   const dashoffset =
     circumference - (attendancePercentage / 100) * circumference;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-8">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
           onClick={navigateBack}
-          className="rounded-full border border-gray-300 hover:bg-gray-50">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          className="rounded-full border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </Button>
-        <h1 className="text-2xl font-bold text-gray-800">Session Details</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          Session Details
+        </h1>
       </div>
 
+      {/* Session Info Card */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
             <div className="flex items-start gap-4 mb-6">
-              <div className="w-16 h-16 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
                 <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-text-primary dark:text-dark-text">
                   {selected_session.title}
                 </h2>
-                <div className="mt-2">
-                  <p className="text-text-secondary dark:text-dark-text-secondary flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4" />
-                    <span>{formattedDate}</span>
-                  </p>
-                </div>
+                <p className="text-text-secondary dark:text-dark-text-secondary flex items-center gap-2 mt-2">
+                  <CalendarDays className="w-4 h-4" />
+                  <span>{formattedDate}</span>
+                </p>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1">
-                  <BookOpen className="w-4 h-4" />
-                  Grade
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
+                <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4" /> Grade
                 </p>
-                <p className="font-bold mt-1">{selected_session.grade.name}</p>
+                <p className="font-bold mt-1 text-text-primary dark:text-dark-text">
+                  {selected_session.grade.name}
+                </p>
               </div>
-
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1">
-                  <School className="w-4 h-4" />
-                  Center
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
+                <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5">
+                  <School className="w-4 h-4" /> Center
                 </p>
-                <p className="font-bold mt-1">{selected_session.center.name}</p>
+                <p className="font-bold mt-1 text-text-primary dark:text-dark-text">
+                  {selected_session.center.name}
+                </p>
               </div>
             </div>
           </div>
-
-          <div>
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3">Session Description</h3>
-              <p className="text-text-secondary dark:text-dark-text-secondary">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold mb-2">Session Description</h3>
+              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
                 {selected_session.notes || "No description available"}
               </p>
             </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3">Session Activities</h3>
+            <div>
+              <h3 className="text-lg font-bold mb-2">Session Activities</h3>
               <div className="flex flex-wrap gap-2">
                 {selected_session.has_homework && (
-                  <Badge className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
                     Has Homework
                   </Badge>
                 )}
                 {selected_session.has_test && (
-                  <Badge className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
                     Has Test
                   </Badge>
                 )}
                 {!selected_session.has_homework &&
                   !selected_session.has_test && (
-                    <Badge className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                      No activities recorded
-                    </Badge>
+                    <Badge variant="secondary">No activities recorded</Badge>
                   )}
               </div>
             </div>
@@ -291,393 +457,586 @@ export default function SessionDetails({
         </div>
       </div>
 
-      {/* Attendance and Students Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Attendance Stats */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-          <h2 className="text-xl font-bold mb-4">Attendance Summary</h2>
-
-          {loadingStats ? (
-            <div className="space-y-4">
-              <Skeleton className="h-24 w-full rounded-xl" />
-              <div className="grid grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 rounded-xl" />
-                ))}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 lg:gap-8 items-start">
+        {/* Left Column: Attendance and Students */}
+        <div className="xl:col-span-3 space-y-6 lg:space-y-8">
+          {/* Attendance Stats */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-4">Attendance Summary</h2>
+            {loadingStats ? (
+              <div className="space-y-4">
+                <Skeleton className="h-24 w-full rounded-xl" />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 rounded-xl" />
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : sessionStats ? (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-24 h-24">
-                    <svg
-                      className="progress-ring w-24 h-24"
-                      width="96"
-                      height="96">
-                      <circle
-                        className="progress-ring__circle"
-                        stroke="#e5e7eb"
-                        strokeWidth="6"
-                        fill="transparent"
-                        r="42"
-                        cx="48"
-                        cy="48"></circle>
-                      <circle
-                        className="progress-ring__circle"
-                        stroke="#10b981"
-                        strokeWidth="6"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={dashoffset}
-                        fill="transparent"
-                        r="42"
-                        cx="48"
-                        cy="48"></circle>
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <p className="text-2xl font-bold">
-                        {attendancePercentage}%
+            ) : sessionStats ? (
+              <>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 shrink-0">
+                      <svg className="w-full h-full" viewBox="0 0 100 100">
+                        <circle
+                          className="text-gray-200 dark:text-gray-700"
+                          strokeWidth="8"
+                          stroke="currentColor"
+                          fill="transparent"
+                          r="42"
+                          cx="50"
+                          cy="50"
+                        />
+                        <circle
+                          className="text-emerald-500"
+                          strokeWidth="8"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={dashoffset}
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="transparent"
+                          r="42"
+                          cx="50"
+                          cy="50"
+                          style={{
+                            transform: "rotate(-90deg)",
+                            transformOrigin: "50% 50%",
+                          }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-text-primary dark:text-dark-text">
+                          {attendancePercentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold text-text-primary dark:text-dark-text">
+                        {sessionStats.present_same_center}/
+                        <span className="text-gray-500">
+                          {sessionStats.expected_attendance_same_center}
+                        </span>
+                      </p>
+                      <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                        Students present
                       </p>
                     </div>
                   </div>
+                  <p className="font-bold text-text-primary dark:text-dark-text text-lg">
+                    Total Attended: {sessionStats.total_present}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                   <div>
-                    <p className="text-3xl font-bold">
-                      {sessionStats.total_present}/
+                    <p className="text-2xl font-bold text-green-600">
+                      {sessionStats.present_same_center}
+                    </p>
+                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      Present ({selected_session.center.name})
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">
+                      {sessionStats.total_absent}
+                    </p>
+                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      Absent
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {sessionStats.present_other_center}
+                    </p>
+                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      From other centers
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">
                       {sessionStats.expected_attendance_same_center}
                     </p>
-                    <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                      Students present (from {selected_session.center.name})
+                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      Expected
                     </p>
                   </div>
                 </div>
+              </>
+            ) : (
+              <div className="py-8 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">Attendance data not available</p>
               </div>
-
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {sessionStats.present_same_center}
-                  </p>
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Present ({selected_session.center.name})
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600">
-                    {sessionStats.total_absent}
-                  </p>
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Absent ({selected_session.center.name})
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {sessionStats.present_other_center}
-                  </p>
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    From Other Centers
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {sessionStats.expected_attendance_same_center}
-                  </p>
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Expected
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="font-bold text-text-primary mt-3 text-sm">
-                  Total Attendance: {sessionStats.total_present}
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="py-8 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">Attendance data not available</p>
-            </div>
-          )}
-        </div>
-
-        {/* Student List */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Students</h2>
-            <div className="relative w-64">
-              <Input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full"
-              />
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-            </div>
+            )}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-[700px] w-full">
-              <thead>
-                <tr className="border-b border-border-default dark:border-gray-700">
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
-                    Student
-                  </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
-                    Center
-                  </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
-                    Contact
-                  </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
-                    Status
-                  </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[80px]">
-                    Score
-                  </th>
-                  <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[120px]">
-                    Homework
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessionStudents
-                  .filter((student) =>
-                    student.full_name
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase())
-                  )
-                  .map((student) => {
-                    const isPresent = selected_session.students.some(
-                      (s) => s.id === student.id
-                    );
-
-                    const studentScore = testScores.find(
-                      (score) => score.student.id === student.id
-                    );
-
-                    const studentHomework = homeworkRecords.find(
-                      (hw) => hw.student.id === student.id
-                    );
-
-                    return (
-                      <tr
-                        key={student.id}
-                        className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3 min-w-[180px]">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                              <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                            </div>
-                            <span className="truncate max-w-[140px]">
-                              {student.full_name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 min-w-[100px]">
-                          {student.center.name}
-                        </td>
-                        <td className="py-3 min-w-[100px]">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-3 w-3 text-text-secondary" />
-                              <span>{student.phone_number}</span>
-                            </div>
-                            {student.parent_number && (
-                              <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                <Users className="h-3 w-3" />
-                                <span>{student.parent_number}</span>
+          {/* Student List */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+              <h2 className="text-xl font-bold">Students</h2>
+              <div className="relative w-full sm:w-64">
+                <Input
+                  type="text"
+                  placeholder="Search students..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-full"
+                />
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div className="overflow-x-auto max-h-[500px]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                  <tr className="border-b border-border-default dark:border-gray-700">
+                    <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      Student
+                    </th>
+                    <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      Contact
+                    </th>
+                    <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      Score
+                    </th>
+                    <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      Homework
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((student) => {
+                      const isPresent = selected_session.students.some(
+                        (s) => s.id === student.id
+                      );
+                      const studentScore = testScores.find(
+                        (score) => score.student.id === student.id
+                      );
+                      const studentHomework = homeworkRecords.find(
+                        (hw) => hw.student.id === student.id
+                      );
+                      return (
+                        <tr
+                          key={student.id}
+                          className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                               </div>
+                              <div>
+                                <p className="font-medium text-text-primary dark:text-dark-text">
+                                  {student.full_name}
+                                </p>
+                                <p className="text-xs text-text-secondary">
+                                  {student.center.name}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Phone className="h-3 w-3 text-text-secondary" />
+                                <span>{student.phone_number}</span>
+                              </div>
+                              {student.parent_number && (
+                                <div className="flex items-center gap-2 text-xs text-text-secondary">
+                                  <Users className="h-3 w-3" />
+                                  <span>{student.parent_number}</span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-2">
+                            <Badge
+                              variant={isPresent ? "default" : "destructive"}
+                              className={cn(
+                                isPresent
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                              )}>
+                              {isPresent ? "Present" : "Absent"}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-2">
+                            {studentScore ? (
+                              `${studentScore.score}/${studentScore.max_score}`
+                            ) : (
+                              <span className="text-gray-400">-</span>
                             )}
-                          </div>
-                        </td>
-                        <td className="py-3 min-w-[100px]">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`inline-block w-3 h-3 rounded-full ${
-                                isPresent ? "bg-green-500" : "bg-red-500"
-                              }`}></span>
-                            <span>{isPresent ? "Present" : "Absent"}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 min-w-[80px]">
-                          {studentScore ? (
-                            `${studentScore.score}/${studentScore.max_score}`
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 min-w-[120px]">
-                          {studentHomework ? (
+                          </td>
+                          <td className="py-3 px-2">
+                            {studentHomework ? (
+                              <span
+                                className={cn(
+                                  "font-medium",
+                                  studentHomework.completed
+                                    ? "text-green-600"
+                                    : "text-yellow-600"
+                                )}>
+                                {studentHomework.completed
+                                  ? "Completed"
+                                  : "Not Done"}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-gray-500">
+                        No matching students found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Test and Homework */}
+        <div className="xl:col-span-2 space-y-6 lg:space-y-8">
+          {/* Test Scores */}
+          {selected_session.has_test && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <h2 className="text-xl font-bold">Test Scores</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-40 sm:w-56">
+                    <Input
+                      type="text"
+                      placeholder="Search students..."
+                      value={testScoreSearch}
+                      onChange={(e) => setTestScoreSearch(e.target.value)}
+                      className="pl-10 w-full"
+                    />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </span>
+                  </div>
+                  <Dialog
+                    open={isSetMaxScoreDialogOpen}
+                    onOpenChange={setIsSetMaxScoreDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="default" disabled={isCreatingScores}>
+                        {isCreatingScores ? (
+                          <span className="flex items-center gap-2">
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24">
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                            </svg>
+                            Setting Scores...
+                          </span>
+                        ) : (
+                          "Set Max Score"
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Set Max Score for Session</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <p className="mb-4 text-gray-700 dark:text-gray-300">
+                          This will set a max score of{" "}
+                          <span className="font-bold">
+                            {newMaxScore || "0"}
+                          </span>{" "}
+                          for all attended students. Existing scores will be
+                          updated.
+                        </p>
+                        <Input
+                          type="number"
+                          value={newMaxScore}
+                          onChange={(e) => setNewMaxScore(e.target.value)}
+                          placeholder="Enter max score"
+                          min="1"
+                          step="0.5"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsSetMaxScoreDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() =>
+                            setMaxScoreForSession(Number(newMaxScore))
+                          }
+                          disabled={!newMaxScore || isCreatingScores}>
+                          Set Max Score
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+
+              {loadingScores ? (
+                <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-xl" />
+                  ))}
+                </div>
+              ) : filteredTestScores.length > 0 ? (
+                <div className="overflow-x-auto max-h-[500px]">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                      <tr>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Student
+                        </th>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Score
+                        </th>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Notes
+                        </th>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTestScores.map((score) => {
+                        const isPlaceholder = score.id < 0;
+
+                        return (
+                          <tr
+                            key={score.id}
+                            className={cn(
+                              "border-b border-border-default dark:border-gray-700 last:border-0",
+                              isPlaceholder
+                                ? "bg-gray-50 dark:bg-gray-700/30"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            )}>
+                            {editingScoreId === score.id ? (
+                              <>
+                                <td className="py-2 px-6 font-medium">
+                                  {score.student.full_name}
+                                </td>
+                                <td className="py-2 px-6">
+                                  <Input
+                                    type="text"
+                                    value={editableScore.score}
+                                    onChange={(e) =>
+                                      setEditableScore({
+                                        ...editableScore,
+                                        score: e.target.value,
+                                      })
+                                    }
+                                    className="h-8"
+                                  />
+                                </td>
+                                <td className="py-2 px-6">
+                                  <Input
+                                    type="text"
+                                    value={editableScore.notes}
+                                    onChange={(e) =>
+                                      setEditableScore({
+                                        ...editableScore,
+                                        notes: e.target.value,
+                                      })
+                                    }
+                                    className="h-8"
+                                  />
+                                </td>
+                                <td className="py-2 px-6">
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="icon"
+                                      className="h-8 w-8 bg-green-500 hover:bg-green-600"
+                                      onClick={() => handleSaveScore(score.id)}>
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8"
+                                      onClick={handleCancelEdit}>
+                                      <Ban className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="py-4 px-6 font-medium">
+                                  {score.student.full_name}
+                                  {isPlaceholder && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      (No score set)
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-6">
+                                  {score.score}/{score.max_score} (
+                                  {score.percentage}%)
+                                </td>
+                                <td className="py-4 px-6 text-gray-500">
+                                  {isPlaceholder ? (
+                                    <span className="text-orange-500">
+                                      {score.notes}
+                                    </span>
+                                  ) : (
+                                    score.notes || "-"
+                                  )}
+                                </td>
+                                <td className="py-4 px-6">
+                                  {!isPlaceholder && (
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      className="h-8 w-8"
+                                      onClick={() => handleEditScore(score)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <AlertCircle className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500">No test scores recorded</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Homework Completion */}
+          {selected_session.has_homework && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <h2 className="text-xl font-bold">Homework Completion</h2>
+                <div className="relative w-40 sm:w-56">
+                  <Input
+                    type="text"
+                    placeholder="Search students..."
+                    value={homeworkSearch}
+                    onChange={(e) => setHomeworkSearch(e.target.value)}
+                    className="pl-10 w-full"
+                  />
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              {loadingHomework ? (
+                <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-xl" />
+                  ))}
+                </div>
+              ) : filteredHomeworkRecords.length > 0 ? (
+                <div className="overflow-x-auto max-h-[500px]">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                      <tr>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Student
+                        </th>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Status
+                        </th>
+                        <th className="text-left py-3 px-6 font-semibold">
+                          Notes
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHomeworkRecords.map((hw) => (
+                        <tr
+                          key={hw.id}
+                          className="border-b border-border-default dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="py-4 px-6 font-medium">
+                            {hw.student.full_name}
+                          </td>
+                          <td className="py-4 px-6">
                             <span
                               className={cn(
                                 "font-medium",
-                                studentHomework.completed
+                                hw.completed
                                   ? "text-green-600"
                                   : "text-yellow-600"
                               )}>
-                              {studentHomework.completed
-                                ? "Completed"
-                                : "Not Done"}
+                              {hw.completed ? "Completed" : "Not Completed"}
                             </span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+                          </td>
+                          <td className="py-4 px-6 text-gray-500">
+                            {hw.notes || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <AlertCircle className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500">No homework records found</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Test Scores and Homework Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {/* Test Scores */}
-        {selected_session.has_test && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Test Scores</h2>
-            </div>
-
-            {loadingScores ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 rounded-xl" />
-                ))}
-              </div>
-            ) : testScores.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-[700px] w-full">
-                  <thead>
-                    <tr className="border-b border-border-default dark:border-gray-700">
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
-                        Student
-                      </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
-                        Score
-                      </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[100px]">
-                        Percentage
-                      </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[200px]">
-                        Notes
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {testScores.map((score) => (
-                      <tr
-                        key={score.id}
-                        className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3 min-w-[180px]">
-                          {score.student.full_name}
-                        </td>
-                        <td className="py-3 min-w-[100px]">
-                          {score.score}/{score.max_score}
-                        </td>
-                        <td className="py-3 min-w-[100px]">
-                          {score.percentage}%
-                        </td>
-                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400 min-w-[200px]">
-                          {score.notes || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <div className="bg-gray-100 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <X className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500">No test scores recorded</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Homework Completion */}
-        {selected_session.has_homework && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Homework Completion</h2>
-            </div>
-
-            {loadingHomework ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 rounded-xl" />
-                ))}
-              </div>
-            ) : homeworkRecords.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-[600px] w-full">
-                  <thead>
-                    <tr className="border-b border-border-default dark:border-gray-700">
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[180px]">
-                        Student
-                      </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[120px]">
-                        Status
-                      </th>
-                      <th className="text-left py-3 text-text-secondary dark:text-dark-text-secondary min-w-[200px]">
-                        Notes
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {homeworkRecords.map((hw) => (
-                      <tr
-                        key={hw.id}
-                        className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-3 min-w-[180px]">
-                          {hw.student.full_name}
-                        </td>
-                        <td className="py-3 min-w-[120px]">
-                          <span
-                            className={cn(
-                              "font-medium",
-                              hw.completed
-                                ? "text-green-600"
-                                : "text-yellow-600"
-                            )}>
-                            {hw.completed ? "Completed" : "Not Completed"}
-                          </span>
-                        </td>
-                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400 min-w-[200px]">
-                          {hw.notes || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <div className="bg-gray-100 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <X className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500">No homework records found</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

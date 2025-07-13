@@ -308,7 +308,14 @@ export default function StudentManagementPage({
       if (!response.data) throw new Error(response.statusText);
 
       showToast("Student added successfully", "success");
-      setNewStudentForm(initialStudentForm);
+      setNewStudentForm((prev) => ({
+        ...prev,
+        username: "",
+        password: "",
+        full_name: "",
+        parent_number: "",
+        phone_number: "",
+      }));
       setFormErrors({});
       triggerDataRefresh();
     } catch (error: AxiosError | unknown) {

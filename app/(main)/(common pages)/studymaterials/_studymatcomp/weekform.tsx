@@ -192,7 +192,7 @@ export default function WeekForm({
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 mt-8 pt-5 border-t border-border-default">
+        <div className="flex justify-end space-x-3 mt-8 pt-5 border-t border-border-default flex-wrap gap-3">
           <Button
             type="button"
             variant="outline"

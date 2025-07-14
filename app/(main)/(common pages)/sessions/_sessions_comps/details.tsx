@@ -221,7 +221,7 @@ export default function SessionDetails({
       } else {
         // Update existing score
         const response = await api.put(
-          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/scores/${scoreId}/`,
+          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions//${selected_session?.id}/scores/${studentId}/`,
           payload,
           { headers: { Authorization: `Bearer ${access}` } }
         );

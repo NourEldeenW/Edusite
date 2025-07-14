@@ -31,6 +31,16 @@ import { Button } from "@/components/ui/button";
 import { FilterPopover } from "../students/_students comps/tabledata";
 import { formatUserDate } from "@/lib/formatDate";
 import SessionDetails from "./_sessions_comps/details";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { showToast } from "../students/_students comps/main";
+import EditSessionDialog from "./_sessions_comps/editSessionForm";
 
 type currentViewType = "main" | "sessionDetails";
 
@@ -42,9 +52,21 @@ export default function Main({ access }: { access: string }) {
   const [selectedCenter, setSelectedCenter] = useState<string | number>("all");
   const [selectedGrade, setSelectedGrade] = useState<string | number>("all");
   const [sId, setSId] = useState<SessionType | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteing, setIsDeleteing] = useState(false);
+  const [deletingSessionId, setDeletingSessionId] = useState<number | null>(
+    null
+  );
+
+  // For edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<SessionType | null>(
+    null
+  );
 
   const sessions = useSessionsStore((state) => state.allSessions);
   const setSessions = useSessionsStore((state) => state.updateSessions);
+  const deleteSession = useSessionsStore((state) => state.deleteSession);
   const centers = useAvail_Grades_CentersStore((state) => state.availCenters);
   const grades = useAvail_Grades_CentersStore((state) => state.availGrades);
   const students = useAvail_Grades_CentersStore((state) => state.allStudents);
@@ -146,320 +168,389 @@ export default function Main({ access }: { access: string }) {
     setCurrentView("main");
   };
 
-  if (currentView === "main") {
-    return (
-      <>
-        <div className="flex flex-col justify-between gap-4 mb-8 md:flex-row md:items-center">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl dark:text-white">
-              Sessions Management
-            </h1>
-            <p className="text-sm text-gray-500 sm:text-base dark:text-gray-400">
-              View and manage all your teaching sessions
-            </p>
-          </div>
-          <AddSessionForm access={access} />
-        </div>
+  const handleDelete = async () => {
+    setIsDeleteing(true);
+    try {
+      await api.delete(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${deletingSessionId}/`,
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+      if (deletingSessionId) {
+        deleteSession(deletingSessionId);
+      }
+      setDeletingSessionId(null);
+      showToast("Session deleted successfully", "success");
+      setIsDeleteDialogOpen(false);
+    } catch {
+      showToast("Error deleting session", "error");
+    } finally {
+      setIsDeleteing(false);
+    }
+  };
 
-        <div
-          className="grid gap-5 mb-8"
-          style={{
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
-          }}>
-          <StatCard
-            value={sessions.length}
-            title="Total Sessions"
-            icon={<CalendarDays className="text-blue-600" />}
-            iconContainerClass="bg-blue-100 dark:bg-blue-900/30"
-            valueClass="text-blue-700 dark:text-blue-300"
-          />
-          <StatCard
-            value={centers.length}
-            title="Learning Centers"
-            icon={<School className="text-emerald-600" />}
-            iconContainerClass="bg-emerald-100 dark:bg-emerald-900/30"
-            valueClass="text-emerald-700 dark:text-emerald-300"
-          />
-        </div>
+  return (
+    <>
+      {editingSession && (
+        <EditSessionDialog
+          session={editingSession}
+          access={access}
+          open={editDialogOpen}
+          setOpen={(v) => {
+            setEditDialogOpen(v);
+            if (!v) setEditingSession(null);
+          }}
+        />
+      )}
 
-        <div className="w-full p-4 sm:p-6 bg-bg-secondary rounded-2xl border border-border-default dark:bg-gray-900">
-          <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
-            {/* Search input */}
-            <div className="flex-grow">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by session title..."
-                className="w-full bg-white dark:bg-gray-800"
-              />
+      {currentView === "main" ? (
+        <>
+          <div className="flex flex-col justify-between gap-4 mb-8 md:flex-row md:items-center">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl dark:text-white">
+                Sessions Management
+              </h1>
+              <p className="text-sm text-gray-500 sm:text-base dark:text-gray-400">
+                View and manage all your teaching sessions
+              </p>
             </div>
+            <AddSessionForm access={access} />
+          </div>
 
-            {/* Filters section */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex flex-wrap gap-2 w-full">
-                <FilterPopover
-                  icon={<BookOpen size={16} />}
-                  label={selectedGradeName}
-                  openState={isFilterGradesOpen}
-                  onOpenChange={setIsFilterGradesOpen}>
-                  <Command className="rounded-lg border border-border-default dark:border-gray-700">
-                    <CommandInput placeholder="Search grade..." />
-                    <CommandList className="max-h-48">
-                      <CommandItem
-                        onSelect={() => setSelectedGrade("all")}
-                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                        All Grades
-                      </CommandItem>
-                      {grades?.map((grade) => (
+          <div
+            className="grid gap-5 mb-8"
+            style={{
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
+            }}>
+            <StatCard
+              value={sessions.length}
+              title="Total Sessions"
+              icon={<CalendarDays className="text-blue-600" />}
+              iconContainerClass="bg-blue-100 dark:bg-blue-900/30"
+              valueClass="text-blue-700 dark:text-blue-300"
+            />
+            <StatCard
+              value={centers.length}
+              title="Learning Centers"
+              icon={<School className="text-emerald-600" />}
+              iconContainerClass="bg-emerald-100 dark:bg-emerald-900/30"
+              valueClass="text-emerald-700 dark:text-emerald-300"
+            />
+          </div>
+
+          <div className="w-full p-4 sm:p-6 bg-bg-secondary rounded-2xl border border-border-default dark:bg-gray-900">
+            <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
+              {/* Search input */}
+              <div className="flex-grow">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by session title..."
+                  className="w-full bg-white dark:bg-gray-800"
+                />
+              </div>
+
+              {/* Filters section */}
+              <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 w-full">
+                  <FilterPopover
+                    icon={<BookOpen size={16} />}
+                    label={selectedGradeName}
+                    openState={isFilterGradesOpen}
+                    onOpenChange={setIsFilterGradesOpen}>
+                    <Command className="rounded-lg border border-border-default dark:border-gray-700">
+                      <CommandInput placeholder="Search grade..." />
+                      <CommandList className="max-h-48">
                         <CommandItem
-                          key={grade.id}
-                          onSelect={() => {
-                            setSelectedGrade(grade.id.toString());
-                            setIsFilterGradesOpen(false);
-                          }}
+                          onSelect={() => setSelectedGrade("all")}
                           className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                          {grade.name}
-                          {grade.id.toString() === selectedGrade && (
-                            <Check className="ml-auto" size={16} />
-                          )}
+                          All Grades
                         </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </FilterPopover>
+                        {grades?.map((grade) => (
+                          <CommandItem
+                            key={grade.id}
+                            onSelect={() => {
+                              setSelectedGrade(grade.id.toString());
+                              setIsFilterGradesOpen(false);
+                            }}
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                            {grade.name}
+                            {grade.id.toString() === selectedGrade && (
+                              <Check className="ml-auto" size={16} />
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </FilterPopover>
 
-                <FilterPopover
-                  icon={<Building2 size={16} />}
-                  label={selectedCenterName}
-                  openState={isFilterCentersOpen}
-                  onOpenChange={setIsFilterCentersOpen}>
-                  <Command className="rounded-lg border border-border-default dark:border-gray-700">
-                    <CommandInput placeholder="Search center..." />
-                    <CommandList className="max-h-48">
-                      <CommandItem
-                        onSelect={() => setSelectedCenter("all")}
-                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                        All Centers
-                      </CommandItem>
-                      {centers?.map((center) => (
+                  <FilterPopover
+                    icon={<Building2 size={16} />}
+                    label={selectedCenterName}
+                    openState={isFilterCentersOpen}
+                    onOpenChange={setIsFilterCentersOpen}>
+                    <Command className="rounded-lg border border-border-default dark:border-gray-700">
+                      <CommandInput placeholder="Search center..." />
+                      <CommandList className="max-h-48">
                         <CommandItem
-                          key={center.id}
-                          onSelect={() => {
-                            setSelectedCenter(center.id.toString());
-                            setIsFilterCentersOpen(false);
-                          }}
+                          onSelect={() => setSelectedCenter("all")}
                           className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                          {center.name}
-                          {center.id.toString() === selectedCenter && (
-                            <Check className="ml-auto" size={16} />
-                          )}
+                          All Centers
                         </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </FilterPopover>
+                        {centers?.map((center) => (
+                          <CommandItem
+                            key={center.id}
+                            onSelect={() => {
+                              setSelectedCenter(center.id.toString());
+                              setIsFilterCentersOpen(false);
+                            }}
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                            {center.name}
+                            {center.id.toString() === selectedCenter && (
+                              <Check className="ml-auto" size={16} />
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </FilterPopover>
 
-                <Button
-                  variant="secondary"
-                  onClick={resetFilters}
-                  className="flex items-center w-fit rounded-full"
-                  aria-label="Reset filters">
-                  <X size={16} />
-                </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={resetFilters}
+                    className="flex items-center w-fit rounded-full"
+                    aria-label="Reset filters">
+                    <X size={16} />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredSessions.length > 0 ? (
-              filteredSessions.map((session) => {
-                const { total, attended } = attendanceData[session.id] || {
-                  total: 0,
-                  attended: 0,
-                };
-                const attendanceRate =
-                  total > 0 ? Math.round((attended / total) * 100) : 0;
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredSessions.length > 0 ? (
+                filteredSessions.map((session) => {
+                  const { total, attended } = attendanceData[session.id] || {
+                    total: 0,
+                    attended: 0,
+                  };
+                  const attendanceRate =
+                    total > 0 ? Math.round((attended / total) * 100) : 0;
 
-                return (
-                  <div
-                    key={session.id}
-                    className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default dark:border-gray-700 p-5 sm:p-6 relative transition-all hover:shadow-lg min-w-0 h-full flex flex-col">
-                    {/* Header section */}
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="inline-block bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-medium px-3 py-1 rounded-full">
-                            {session.grade?.name || "No Grade"}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {session.date
-                              ? formatUserDate(session.date, false)
-                              : "No date"}
-                          </span>
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white truncate">
-                          {session.title}
-                        </h3>
-                        <div className="mt-2 text-text-secondary dark:text-gray-400">
-                          <p className="text-sm line-clamp-3 break-words">
-                            {session.notes || "No description available"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          className="p-2 text-text-secondary dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                          aria-label="Edit session">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          className="p-2 text-text-secondary dark:text-gray-400 hover:text-destructive transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                          aria-label="Delete session">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Separator */}
-                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
-
-                    {/* Details section */}
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Center
-                          </h4>
-                          <p className="font-medium break-words mt-1">
-                            {session.center?.name || "No center assigned"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Time
-                          </h4>
-                          <p className="font-medium mt-1">
-                            {session.date
-                              ? formatUserDate(session.date, false)
-                              : "No time set"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Separator */}
-                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
-
-                    {/* Attendance section */}
-                    <div className="mt-auto">
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="relative w-14 h-14">
-                            <svg
-                              className="progress-ring w-14 h-14"
-                              width="56"
-                              height="56"
-                              viewBox="0 0 56 56">
-                              <circle
-                                className="progress-ring__circle"
-                                stroke="#e5e7eb"
-                                strokeWidth="4"
-                                fill="transparent"
-                                r="22"
-                                cx="28"
-                                cy="28"
-                              />
-                              <circle
-                                className="progress-ring__circle"
-                                stroke={
-                                  attendanceRate >= 70
-                                    ? "#10b981"
-                                    : attendanceRate >= 40
-                                    ? "#f59e0b"
-                                    : "#ef4444"
-                                }
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeDasharray="138"
-                                strokeDashoffset={
-                                  (138 * (100 - attendanceRate)) / 100
-                                }
-                                fill="transparent"
-                                r="22"
-                                cx="28"
-                                cy="28"
-                                transform="rotate(-90 28 28)"
-                              />
-                            </svg>
-                            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                              {attendanceRate}%
+                  return (
+                    <div
+                      key={session.id}
+                      className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default dark:border-gray-700 p-5 sm:p-6 relative transition-all hover:shadow-lg min-w-0 h-full flex flex-col">
+                      {/* Header section */}
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="inline-block bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-medium px-3 py-1 rounded-full">
+                              {session.grade?.name || "No Grade"}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {session.date
+                                ? formatUserDate(session.date, false)
+                                : "No date"}
                             </span>
                           </div>
+                          <h3 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white truncate">
+                            {session.title}
+                          </h3>
+                          <div className="mt-2 text-text-secondary dark:text-gray-400">
+                            <p className="text-sm line-clamp-3 break-words">
+                              {session.notes || "No description available"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            className="p-2 text-text-secondary dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            aria-label="Edit session"
+                            onClick={() => {
+                              setEditingSession(session);
+                              setEditDialogOpen(true);
+                            }}>
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="p-2 text-text-secondary dark:text-gray-400 hover:text-destructive transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            aria-label="Delete session"
+                            onClick={() => {
+                              setIsDeleteDialogOpen(true);
+                              setDeletingSessionId(session.id);
+                            }}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Separator */}
+                      <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
+
+                      {/* Details section */}
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </div>
                           <div>
-                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Attendance
+                            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Center
                             </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              {attended} of {total} students
+                            <p className="font-medium break-words mt-1">
+                              {session.center?.name || "No center assigned"}
                             </p>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => {
-                            setCurrentView("sessionDetails");
-                            setSId(session);
-                          }}
-                          className="text-primary hover:text-primary-dark flex items-center gap-1.5 font-medium px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                          <Eye className="w-5 h-5" />
-                          <span>View Details</span>
-                        </button>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Time
+                            </h4>
+                            <p className="font-medium mt-1">
+                              {session.date
+                                ? formatUserDate(session.date, false)
+                                : "No time set"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Separator */}
+                      <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
+
+                      {/* Attendance section */}
+                      <div className="mt-auto">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative w-14 h-14">
+                              <svg
+                                className="progress-ring w-14 h-14"
+                                width="56"
+                                height="56"
+                                viewBox="0 0 56 56">
+                                <circle
+                                  className="progress-ring__circle"
+                                  stroke="#e5e7eb"
+                                  strokeWidth="4"
+                                  fill="transparent"
+                                  r="22"
+                                  cx="28"
+                                  cy="28"
+                                />
+                                <circle
+                                  className="progress-ring__circle"
+                                  stroke={
+                                    attendanceRate >= 70
+                                      ? "#10b981"
+                                      : attendanceRate >= 40
+                                      ? "#f59e0b"
+                                      : "#ef4444"
+                                  }
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeDasharray="138"
+                                  strokeDashoffset={
+                                    (138 * (100 - attendanceRate)) / 100
+                                  }
+                                  fill="transparent"
+                                  r="22"
+                                  cx="28"
+                                  cy="28"
+                                  transform="rotate(-90 28 28)"
+                                />
+                              </svg>
+                              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                                {attendanceRate}%
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Attendance
+                              </h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {attended} of {total} students
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setCurrentView("sessionDetails");
+                              setSId(session);
+                            }}
+                            className="text-primary hover:text-primary-dark flex items-center gap-1.5 font-medium px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                            <Eye className="w-5 h-5" />
+                            <span>View Details</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full py-16 text-center rounded-xl border border-border-default dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="text-gray-400 dark:text-gray-500 mb-4">
+                    <CalendarDays className="w-16 h-16 mx-auto" />
                   </div>
-                );
-              })
-            ) : (
-              <div className="col-span-full py-16 text-center rounded-xl border border-border-default dark:border-gray-700 bg-white dark:bg-gray-800">
-                <div className="text-gray-400 dark:text-gray-500 mb-4">
-                  <CalendarDays className="w-16 h-16 mx-auto" />
+                  <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300">
+                    No sessions found
+                  </h3>
+                  <p className="text-md text-gray-500 dark:text-gray-400 mt-2 mb-6 max-w-md mx-auto">
+                    Try adjusting your search criteria or create a new session
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={resetFilters}
+                    className="mr-3">
+                    Clear Filters
+                  </Button>
+                  <AddSessionForm access={access} />
                 </div>
-                <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300">
-                  No sessions found
-                </h3>
-                <p className="text-md text-gray-500 dark:text-gray-400 mt-2 mb-6 max-w-md mx-auto">
-                  Try adjusting your search criteria or create a new session
-                </p>
+              )}
+            </div>
+          </div>
+          <Dialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  Are you sure you want to delete this session?
+                </DialogTitle>
+                <DialogDescription>
+                  This action cannot be undone!
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
                 <Button
                   variant="outline"
-                  onClick={resetFilters}
-                  className="mr-3">
-                  Clear Filters
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  disabled={isDeleteing}
+                  className="hover:bg-bg-secondary">
+                  Cancel
                 </Button>
-                <AddSessionForm access={access} />
-              </div>
-            )}
-          </div>
-        </div>
-      </>
-    );
-  } else if (currentView === "sessionDetails") {
-    return (
-      <SessionDetails
-        selected_session={sId}
-        access={access}
-        navigateBack={navigateBack}
-      />
-    );
-  }
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isDeleteing}>
+                  {isDeleteing ? "Deleting..." : "Delete"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : (
+        <SessionDetails
+          selected_session={sId}
+          access={access}
+          navigateBack={navigateBack}
+        />
+      )}
+    </>
+  );
 }

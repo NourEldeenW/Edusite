@@ -24,11 +24,12 @@ export interface SessionType {
   has_test: boolean;
 }
 
-interface StateType {
+export interface StateType {
   allSessions: SessionType[];
   updateSessions: (sessions: SessionType[]) => void;
   deleteSession: (id: number) => void;
   addSession: (session: SessionType) => void;
+  updateSession: (id: number, updatedSession: Partial<SessionType>) => void;
 }
 
 const useSessionsStore = create<StateType>((set) => ({
@@ -41,6 +42,12 @@ const useSessionsStore = create<StateType>((set) => ({
   deleteSession: (id) =>
     set((state) => ({
       allSessions: state.allSessions.filter((session) => session.id !== id),
+    })),
+  updateSession: (id, updatedSession) =>
+    set((state) => ({
+      allSessions: state.allSessions.map((session) =>
+        session.id === id ? { ...session, ...updatedSession } : session
+      ),
     })),
 }));
 

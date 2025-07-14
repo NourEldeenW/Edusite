@@ -57,7 +57,8 @@ export default function BasicInfoComp() {
     const newCenter: Center = {
       center_id: availableCenter?.id || 0,
       open_date: new Date().toISOString(),
-      close_date: "0",
+      // Set close date to 1 week from now by default
+      close_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     const newCenters = [...centers, newCenter];
@@ -214,10 +215,10 @@ export default function BasicInfoComp() {
                   )
               );
 
-              const durationText =
-                center.close_date === "0"
-                  ? "Available indefinitely"
-                  : getDuration(center.open_date, center.close_date);
+              const durationText = getDuration(
+                center.open_date,
+                center.close_date
+              );
 
               return (
                 <div
@@ -284,65 +285,43 @@ export default function BasicInfoComp() {
 
                   {/* Column 3: Close Date */}
                   <div className="md:col-span-1 space-y-2.5">
-                    {/* Combined label and checkbox in one line */}
-                    <div className="flex items-center justify-between">
-                      <Label className="font-medium text-text-primary">
-                        Close Date
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={center.close_date === "0"}
-                          onChange={(e) =>
-                            updateCenter(
-                              index,
-                              "close_date",
-                              e.target.checked ? "0" : new Date().toISOString()
-                            )
-                          }
-                          className="h-4 w-4 text-primary focus:ring-primary"
-                          id={`never-ends-${index}`}
-                        />
-                        <Label
-                          htmlFor={`never-ends-${index}`}
-                          className="text-sm text-text-secondary whitespace-nowrap">
-                          Never ends
-                        </Label>
-                      </div>
-                    </div>
-
-                    {center.close_date !== "0" && (
-                      <>
-                        <div className="relative mt-2">
-                          <input
-                            type="datetime-local"
-                            value={format(
-                              new Date(center.close_date),
-                              "yyyy-MM-dd'T'HH:mm"
-                            )}
-                            onChange={(e) =>
-                              updateCenter(
-                                index,
-                                "close_date",
-                                new Date(e.target.value).toISOString()
+                    <Label className="font-medium text-text-primary">
+                      Close Date
+                    </Label>
+                    <div className="relative">
+                      <input
+                        type="datetime-local"
+                        value={
+                          center.close_date === "0"
+                            ? ""
+                            : format(
+                                new Date(center.close_date),
+                                "yyyy-MM-dd'T'HH:mm"
                               )
-                            }
-                            className="w-full px-2 py-2.5 bg-bg-base border border-border-default rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
-                            min={
-                              center.open_date === "0"
-                                ? format(new Date(), "yyyy-MM-dd'T'HH:mm")
-                                : format(
-                                    new Date(center.open_date),
-                                    "yyyy-MM-dd'T'HH:mm"
-                                  )
-                            }
-                          />
-                        </div>
-                        <div className="text-xs text-text-secondary/70">
-                          {getRelativeTime(center.close_date)}
-                        </div>
-                      </>
-                    )}
+                        }
+                        onChange={(e) =>
+                          updateCenter(
+                            index,
+                            "close_date",
+                            e.target.value
+                              ? new Date(e.target.value).toISOString()
+                              : "0"
+                          )
+                        }
+                        className="w-full px-2 py-2.5 bg-bg-base border border-border-default rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
+                        min={
+                          center.open_date === "0"
+                            ? format(new Date(), "yyyy-MM-dd'T'HH:mm")
+                            : format(
+                                new Date(center.open_date),
+                                "yyyy-MM-dd'T'HH:mm"
+                              )
+                        }
+                      />
+                    </div>
+                    <div className="text-xs text-text-secondary/70">
+                      {getRelativeTime(center.close_date)}
+                    </div>
                   </div>
 
                   {/* Column 4: Actions & Duration */}

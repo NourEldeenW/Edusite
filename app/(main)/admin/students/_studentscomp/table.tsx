@@ -590,7 +590,7 @@ export default function StudentsTable({
                   </div>
                 )}
 
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className=" rounded-lg border border-gray-200 max-h-[600px] overflow-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>

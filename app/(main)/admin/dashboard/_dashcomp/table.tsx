@@ -778,7 +778,7 @@ export default function TeachersTable({
       {/* Edit Modal */}
       {isEditOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in">
-          <div className="bg-bg-secondary p-6 rounded-xl w-full max-w-md md:max-w-xl relative border border-border-default shadow-2xl transform transition-all duration-300 hover:shadow-2xl hover:scale-[1.005]">
+          <div className="bg-bg-secondary p-6 rounded-xl max-h-[95dvh] overflow-y-auto w-full max-w-md md:max-w-xl relative border border-border-default shadow-2xl transform transition-all duration-300 hover:shadow-2xl hover:scale-[1.005]">
             <h3 className="text-lg font-bold mb-4 text-text-primary">
               Edit ({editedNameId.ename})
             </h3>

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type visibility = "immediate" | "after_close" | "manual" | "n";
+type visibility = "immediate" | "after_close" | "manual";
 type question_type = "mcq";
 type selection_type = "single" | "multiple";
 
@@ -50,6 +50,8 @@ interface StateType {
     score_visibility?: visibility,
     answers_visibility?: visibility
   ) => void;
+  addQuestion: (question: Question) => void;
+  deleteQuestion: (index: number) => void;
   updateQuestions: (questions: Question[]) => void;
   updateBasicInfo: (
     title?: string,
@@ -57,6 +59,7 @@ interface StateType {
     grade_id?: number,
     centers?: Center[]
   ) => void;
+  clearQuiz: () => void;
 }
 
 const defaultQuiz: Quiz = {
@@ -76,6 +79,22 @@ const defaultQuiz: Quiz = {
 
 const useCreateQuizStore = create<StateType>((set) => ({
   createdQuiz: defaultQuiz,
+
+  addQuestion: (question) =>
+    set((state) => ({
+      createdQuiz: {
+        ...state.createdQuiz,
+        questions: [...state.createdQuiz.questions, question],
+      },
+    })),
+
+  deleteQuestion: (index) =>
+    set((state) => ({
+      createdQuiz: {
+        ...state.createdQuiz,
+        questions: state.createdQuiz.questions.filter((_, i) => i !== index),
+      },
+    })),
 
   updateSettings: (
     settings,
@@ -125,6 +144,18 @@ const useCreateQuizStore = create<StateType>((set) => ({
           ...(grade_id !== undefined && { grade_id }),
           ...(centers !== undefined && { centers }),
         },
+      },
+    })),
+
+  clearQuiz: () =>
+    set(() => ({
+      createdQuiz: {
+        ...defaultQuiz,
+        basic_info: {
+          ...defaultQuiz.basic_info,
+          centers: [],
+        },
+        questions: [],
       },
     })),
 }));

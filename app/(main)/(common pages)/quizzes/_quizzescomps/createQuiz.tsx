@@ -8,6 +8,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import BasicInfoComp from "./_creatQcomps/basicInfo";
+import Settings from "./_creatQcomps/settings";
 
 export default function CreateQuiz() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -88,7 +89,11 @@ export default function CreateQuiz() {
             </div>
           )}
 
-          {currentStep === 2 && <div>{/* Step 2 content */}</div>}
+          {currentStep === 2 && (
+            <div>
+              <Settings />
+            </div>
+          )}
           {currentStep === 3 && <div>{/* Step 3 content */}</div>}
           {currentStep === 4 && <div>{/* Step 4 content */}</div>}
         </div>
@@ -97,8 +102,8 @@ export default function CreateQuiz() {
         <div className="creator-footer flex justify-between pt-6 border-t border-border-default">
           {currentStep > 1 ? (
             <Button
-              variant="secondary"
-              className="px-5 py-3 text-base font-medium"
+              variant="ghost"
+              className="px-5 py-3 text-base font-medium text-text-primary bg-bg-secondary hover:bg-bg-secondary"
               onClick={() => goToStep(currentStep - 1)}>
               <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 mr-2" />
               Back

@@ -200,9 +200,6 @@ export default function BasicInfoComp() {
             <p className="text-text-secondary/80 italic">
               No centers added yet
             </p>
-            <p className="text-sm text-text-secondary/60 mt-2">
-              Click &quot;Add Center&quot; to get started
-            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
@@ -285,7 +282,7 @@ export default function BasicInfoComp() {
 
                   {/* Column 3: Close Date */}
                   <div className="md:col-span-1 space-y-2.5">
-                    <Label className="font-medium text-text-primary">
+                    <Label className="font-medium text-text-primary mb-4">
                       Close Date
                     </Label>
                     <div className="relative">

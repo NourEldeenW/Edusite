@@ -87,6 +87,7 @@ export default function SessionDetails({
   const [newMaxScore, setNewMaxScore] = useState("");
   const [isCreatingScores, setIsCreatingScores] = useState(false);
   const [editingScoreId, setEditingScoreId] = useState<number | null>(null);
+  const [savingScoreId, setSavingScoreId] = useState<number | null>(null);
   const [editableScore, setEditableScore] = useState<{
     score: string;
     notes: string;
@@ -192,6 +193,7 @@ export default function SessionDetails({
     studentId: number,
     isNew: boolean
   ) => {
+    setSavingScoreId(scoreId);
     try {
       // Find the student to get their details
       const student = sessionStudents.find((s) => s.id === studentId);
@@ -245,6 +247,8 @@ export default function SessionDetails({
       setEditableScore({ score: "", notes: "" });
     } catch (error) {
       console.error("Failed to save score:", error);
+    } finally {
+      setSavingScoreId(null);
     }
   };
 
@@ -796,7 +800,7 @@ export default function SessionDetails({
                       <DialogTrigger asChild>
                         <Button variant="default" disabled={isCreatingScores}>
                           {isCreatingScores ? (
-                            <span className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                               <svg
                                 className="animate-spin h-4 w-4"
                                 viewBox="0 0 24 24">
@@ -810,7 +814,7 @@ export default function SessionDetails({
                                 />
                               </svg>
                               Setting Scores...
-                            </span>
+                            </div>
                           ) : (
                             "Set Max Score"
                           )}
@@ -849,7 +853,25 @@ export default function SessionDetails({
                               setMaxScoreForSession(Number(newMaxScore))
                             }
                             disabled={!newMaxScore || isCreatingScores}>
-                            Set Max Score
+                            {isCreatingScores ? (
+                              <div className="flex items-center gap-2">
+                                <svg
+                                  className="animate-spin h-4 w-4"
+                                  viewBox="0 0 24 24">
+                                  <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                    fill="none"
+                                  />
+                                </svg>
+                                Setting...
+                              </div>
+                            ) : (
+                              "Set Max Score"
+                            )}
                           </Button>
                         </DialogFooter>
                       </DialogContent>
@@ -885,6 +907,7 @@ export default function SessionDetails({
                       <tbody>
                         {filteredTestScores.map((score) => {
                           const isPlaceholder = score.id < 0;
+                          const isSaving = savingScoreId === score.id;
 
                           return (
                             <tr
@@ -911,6 +934,7 @@ export default function SessionDetails({
                                         })
                                       }
                                       className="h-8"
+                                      disabled={isSaving}
                                     />
                                   </td>
                                   <td className="py-2 px-6">
@@ -924,6 +948,7 @@ export default function SessionDetails({
                                         })
                                       }
                                       className="h-8"
+                                      disabled={isSaving}
                                     />
                                   </td>
                                   <td className="py-2 px-6">
@@ -937,14 +962,31 @@ export default function SessionDetails({
                                             score.student.id,
                                             isPlaceholder
                                           )
-                                        }>
-                                        <Save className="h-4 w-4" />
+                                        }
+                                        disabled={isSaving}>
+                                        {isSaving ? (
+                                          <svg
+                                            className="animate-spin h-4 w-4"
+                                            viewBox="0 0 24 24">
+                                            <circle
+                                              cx="12"
+                                              cy="12"
+                                              r="10"
+                                              stroke="currentColor"
+                                              strokeWidth="4"
+                                              fill="none"
+                                            />
+                                          </svg>
+                                        ) : (
+                                          <Save className="h-4 w-4" />
+                                        )}
                                       </Button>
                                       <Button
                                         size="icon"
                                         variant="ghost"
                                         className="h-8 w-8"
-                                        onClick={handleCancelEdit}>
+                                        onClick={handleCancelEdit}
+                                        disabled={isSaving}>
                                         <Ban className="h-4 w-4" />
                                       </Button>
                                     </div>
@@ -967,7 +1009,8 @@ export default function SessionDetails({
                                       size="icon"
                                       variant="outline"
                                       className="h-8 w-8"
-                                      onClick={() => handleEditScore(score)}>
+                                      onClick={() => handleEditScore(score)}
+                                      disabled={savingScoreId !== null}>
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                   </td>

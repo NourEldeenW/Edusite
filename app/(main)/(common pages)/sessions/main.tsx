@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { showToast } from "../students/_students comps/main";
 import EditSessionDialog from "./_sessions_comps/editSessionForm";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type currentViewType = "main" | "sessionDetails";
 
@@ -57,6 +58,7 @@ export default function Main({ access }: { access: string }) {
   const [deletingSessionId, setDeletingSessionId] = useState<number | null>(
     null
   );
+  const [isLoading, setIsLoading] = useState(true);
 
   // For edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -143,6 +145,7 @@ export default function Main({ access }: { access: string }) {
 
   useEffect(() => {
     const fetchSessions = async () => {
+      setIsLoading(true);
       try {
         const [sessionsres, studentsres] = await Promise.all([
           api.get(
@@ -158,6 +161,8 @@ export default function Main({ access }: { access: string }) {
         setSessions(sessionsres.data);
       } catch (error) {
         console.error("Error fetching sessions:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -216,118 +221,203 @@ export default function Main({ access }: { access: string }) {
             <AddSessionForm access={access} />
           </div>
 
+          {/* Stat Cards - Skeleton when loading */}
           <div
             className="grid gap-5 mb-8"
             style={{
               gridTemplateColumns:
                 "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
             }}>
-            <StatCard
-              value={sessions.length}
-              title="Total Sessions"
-              icon={<CalendarDays className="text-blue-600" />}
-              iconContainerClass="bg-blue-100 dark:bg-blue-900/30"
-              valueClass="text-blue-700 dark:text-blue-300"
-            />
-            <StatCard
-              value={centers.length}
-              title="Learning Centers"
-              icon={<School className="text-emerald-600" />}
-              iconContainerClass="bg-emerald-100 dark:bg-emerald-900/30"
-              valueClass="text-emerald-700 dark:text-emerald-300"
-            />
+            {isLoading ? (
+              <>
+                <Skeleton className="h-[120px] rounded-xl" />
+                <Skeleton className="h-[120px] rounded-xl" />
+              </>
+            ) : (
+              <>
+                <StatCard
+                  value={sessions.length}
+                  title="Total Sessions"
+                  icon={<CalendarDays className="text-blue-600" />}
+                  iconContainerClass="bg-blue-100 dark:bg-blue-900/30"
+                  valueClass="text-blue-700 dark:text-blue-300"
+                />
+                <StatCard
+                  value={centers.length}
+                  title="Learning Centers"
+                  icon={<School className="text-emerald-600" />}
+                  iconContainerClass="bg-emerald-100 dark:bg-emerald-900/30"
+                  valueClass="text-emerald-700 dark:text-emerald-300"
+                />
+              </>
+            )}
           </div>
 
           <div className="w-full p-4 sm:p-6 bg-bg-secondary rounded-2xl border border-border-default dark:bg-gray-900">
-            <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
-              {/* Search input */}
-              <div className="flex-grow">
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by session title..."
-                  className="w-full bg-white dark:bg-gray-800"
-                />
-              </div>
-
-              {/* Filters section */}
-              <div className="flex flex-wrap gap-3">
+            {/* Search and Filters - Skeleton when loading */}
+            {isLoading ? (
+              <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
+                <Skeleton className="h-12 rounded-lg" />
                 <div className="flex flex-wrap gap-2 w-full">
-                  <FilterPopover
-                    icon={<BookOpen size={16} />}
-                    label={selectedGradeName}
-                    openState={isFilterGradesOpen}
-                    onOpenChange={setIsFilterGradesOpen}>
-                    <Command className="rounded-lg border border-border-default dark:border-gray-700">
-                      <CommandInput placeholder="Search grade..." />
-                      <CommandList className="max-h-48">
-                        <CommandItem
-                          onSelect={() => setSelectedGrade("all")}
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                          All Grades
-                        </CommandItem>
-                        {grades?.map((grade) => (
-                          <CommandItem
-                            key={grade.id}
-                            onSelect={() => {
-                              setSelectedGrade(grade.id.toString());
-                              setIsFilterGradesOpen(false);
-                            }}
-                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                            {grade.name}
-                            {grade.id.toString() === selectedGrade && (
-                              <Check className="ml-auto" size={16} />
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </FilterPopover>
-
-                  <FilterPopover
-                    icon={<Building2 size={16} />}
-                    label={selectedCenterName}
-                    openState={isFilterCentersOpen}
-                    onOpenChange={setIsFilterCentersOpen}>
-                    <Command className="rounded-lg border border-border-default dark:border-gray-700">
-                      <CommandInput placeholder="Search center..." />
-                      <CommandList className="max-h-48">
-                        <CommandItem
-                          onSelect={() => setSelectedCenter("all")}
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                          All Centers
-                        </CommandItem>
-                        {centers?.map((center) => (
-                          <CommandItem
-                            key={center.id}
-                            onSelect={() => {
-                              setSelectedCenter(center.id.toString());
-                              setIsFilterCentersOpen(false);
-                            }}
-                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-                            {center.name}
-                            {center.id.toString() === selectedCenter && (
-                              <Check className="ml-auto" size={16} />
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </FilterPopover>
-
-                  <Button
-                    variant="secondary"
-                    onClick={resetFilters}
-                    className="flex items-center w-fit rounded-full"
-                    aria-label="Reset filters">
-                    <X size={16} />
-                  </Button>
+                  <Skeleton className="h-10 w-32 rounded-full" />
+                  <Skeleton className="h-10 w-32 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default dark:border-gray-800 flex flex-col md:flex-row gap-4 mb-6">
+                {/* Search input */}
+                <div className="flex-grow">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by session title..."
+                    className="w-full bg-white dark:bg-gray-800"
+                  />
+                </div>
 
+                {/* Filters section */}
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2 w-full">
+                    <FilterPopover
+                      icon={<BookOpen size={16} />}
+                      label={selectedGradeName}
+                      openState={isFilterGradesOpen}
+                      onOpenChange={setIsFilterGradesOpen}>
+                      <Command className="rounded-lg border border-border-default dark:border-gray-700">
+                        <CommandInput placeholder="Search grade..." />
+                        <CommandList className="max-h-48">
+                          <CommandItem
+                            onSelect={() => setSelectedGrade("all")}
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                            All Grades
+                          </CommandItem>
+                          {grades?.map((grade) => (
+                            <CommandItem
+                              key={grade.id}
+                              onSelect={() => {
+                                setSelectedGrade(grade.id.toString());
+                                setIsFilterGradesOpen(false);
+                              }}
+                              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                              {grade.name}
+                              {grade.id.toString() === selectedGrade && (
+                                <Check className="ml-auto" size={16} />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </FilterPopover>
+
+                    <FilterPopover
+                      icon={<Building2 size={16} />}
+                      label={selectedCenterName}
+                      openState={isFilterCentersOpen}
+                      onOpenChange={setIsFilterCentersOpen}>
+                      <Command className="rounded-lg border border-border-default dark:border-gray-700">
+                        <CommandInput placeholder="Search center..." />
+                        <CommandList className="max-h-48">
+                          <CommandItem
+                            onSelect={() => setSelectedCenter("all")}
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                            All Centers
+                          </CommandItem>
+                          {centers?.map((center) => (
+                            <CommandItem
+                              key={center.id}
+                              onSelect={() => {
+                                setSelectedCenter(center.id.toString());
+                                setIsFilterCentersOpen(false);
+                              }}
+                              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+                              {center.name}
+                              {center.id.toString() === selectedCenter && (
+                                <Check className="ml-auto" size={16} />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </FilterPopover>
+
+                    <Button
+                      variant="secondary"
+                      onClick={resetFilters}
+                      className="flex items-center w-fit rounded-full"
+                      aria-label="Reset filters">
+                      <X size={16} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Session Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredSessions.length > 0 ? (
+              {isLoading ? (
+                // Skeleton loading state
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default dark:border-gray-700 p-5 sm:p-6 relative min-w-0 h-full flex flex-col">
+                    {/* Header skeleton */}
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="min-w-0 w-full">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Skeleton className="h-6 w-24 rounded-full" />
+                          <Skeleton className="h-4 w-20 rounded" />
+                        </div>
+                        <Skeleton className="h-6 w-3/4 mb-2 rounded" />
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 w-5/6 mt-1 rounded" />
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                      </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
+
+                    {/* Details skeleton */}
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div className="w-full">
+                          <Skeleton className="h-4 w-16 mb-2 rounded" />
+                          <Skeleton className="h-5 w-32 rounded" />
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div className="w-full">
+                          <Skeleton className="h-4 w-16 mb-2 rounded" />
+                          <Skeleton className="h-5 w-32 rounded" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
+
+                    {/* Attendance skeleton */}
+                    <div className="mt-auto">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="w-14 h-14 rounded-full" />
+                          <div>
+                            <Skeleton className="h-4 w-20 mb-1 rounded" />
+                            <Skeleton className="h-4 w-32 rounded" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-10 w-36 rounded-lg" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : filteredSessions.length > 0 ? (
                 filteredSessions.map((session) => {
                   const { total, attended } = attendanceData[session.id] || {
                     total: 0,
@@ -538,7 +628,30 @@ export default function Main({ access }: { access: string }) {
                   variant="destructive"
                   onClick={handleDelete}
                   disabled={isDeleteing}>
-                  {isDeleteing ? "Deleting..." : "Delete"}
+                  {isDeleteing ? (
+                    <div className="flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deleting...
+                    </div>
+                  ) : (
+                    "Delete"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>

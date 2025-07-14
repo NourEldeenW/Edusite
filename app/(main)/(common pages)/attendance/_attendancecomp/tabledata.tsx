@@ -217,19 +217,16 @@ export default function TableData({
         payload,
         { headers: { Authorization: `Bearer ${access}` } }
       );
-
-      if (attendedStudentIds.has(editedStudent.id)) {
-        await api.post(
-          `${djangoApi}session/sessions/${sessionID}/homework/create/`,
-          [
-            {
-              student_id: editedStudent.id,
-              completed: editedStudentStatuses?.homework === "done",
-            },
-          ],
-          { headers: { Authorization: `Bearer ${access}` } }
-        );
-      }
+      await api.post(
+        `${djangoApi}session/sessions/${sessionID}/homework/create/`,
+        [
+          {
+            student_id: editedStudent.id,
+            completed: editedStudentStatuses?.homework === "done",
+          },
+        ],
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
 
       // Refresh homework data to get actual IDs
       if (hashomework) {

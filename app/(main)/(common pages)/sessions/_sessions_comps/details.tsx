@@ -14,6 +14,7 @@ import {
   Edit,
   Save,
   Ban,
+  Building2,
 } from "lucide-react";
 import { formatUserDate } from "@/lib/formatDate";
 import { Badge } from "@/components/ui/badge";
@@ -328,12 +329,27 @@ export default function SessionDetails({
       ]
     : [];
 
-  const filteredStudents = sessionStudents.filter(
-    (student) =>
-      student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.phone_number?.includes(searchQuery) ||
-      student.parent_number?.includes(searchQuery)
-  );
+  // Filter and sort students - attended first, then absent
+  const filteredStudents = sessionStudents
+    .filter(
+      (student) =>
+        student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.phone_number?.includes(searchQuery) ||
+        student.parent_number?.includes(searchQuery)
+    )
+    .sort((a, b) => {
+      // Check attendance status
+      const aPresent = selected_session?.students.some((s) => s.id === a.id);
+      const bPresent = selected_session?.students.some((s) => s.id === b.id);
+
+      // If both are present or both are absent, sort by name
+      if (aPresent === bPresent) {
+        return a.full_name.localeCompare(b.full_name);
+      }
+
+      // Present students come before absent students
+      return aPresent ? -1 : 1;
+    });
 
   const filteredTestScores = testScoresForTable.filter((score) =>
     score.student.full_name
@@ -586,7 +602,7 @@ export default function SessionDetails({
               )}
             </div>
 
-            {/* Student List */}
+            {/* Student List - Now shows attended students first */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
                 <h2 className="text-xl font-bold">Students</h2>
@@ -624,6 +640,9 @@ export default function SessionDetails({
                         Contact
                       </th>
                       <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                        center
+                      </th>
+                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
                         Status
                       </th>
                       <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
@@ -649,7 +668,10 @@ export default function SessionDetails({
                         return (
                           <tr
                             key={student.id}
-                            className="border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            className={cn(
+                              "border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                              !isPresent && "bg-gray-50 dark:bg-gray-800/50"
+                            )}>
                             <td className="py-3 px-2">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
@@ -660,7 +682,7 @@ export default function SessionDetails({
                                     {student.full_name}
                                   </p>
                                   <p className="text-xs text-text-secondary">
-                                    {student.center.name}
+                                    ID: {student.student_id}
                                   </p>
                                 </div>
                               </div>
@@ -678,6 +700,12 @@ export default function SessionDetails({
                                   </div>
                                 )}
                               </div>
+                            </td>
+                            <td>
+                              <Badge variant="outline" className="gap-1">
+                                <Building2 className="h-4 w-4" />
+                                {student.center.name}
+                              </Badge>
                             </td>
                             <td className="py-3 px-2">
                               <Badge

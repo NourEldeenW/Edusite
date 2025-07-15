@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import BasicInfoComp from "./_creatQcomps/basicInfo";
 import Settings from "./_creatQcomps/settings";
+import CreateQuestions from "./_creatQcomps/createQuestions";
 
 export default function CreateQuiz() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -94,7 +95,11 @@ export default function CreateQuiz() {
               <Settings />
             </div>
           )}
-          {currentStep === 3 && <div>{/* Step 3 content */}</div>}
+          {currentStep === 3 && (
+            <div>
+              <CreateQuestions />
+            </div>
+          )}
           {currentStep === 4 && <div>{/* Step 4 content */}</div>}
         </div>
 

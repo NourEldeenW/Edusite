@@ -1,5 +1,5 @@
 import useCreateQuizStore from "@/lib/stores/onlineQuizStores/createQuiz";
-import { Clock, Eye, CheckCircle } from "lucide-react";
+import { Clock, Eye, CheckCircle, Shuffle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,6 +18,9 @@ export default function Settings() {
   );
   const answers_visibility = useCreateQuizStore(
     (state) => state.createdQuiz.settings.answers_visibility
+  );
+  const question_order = useCreateQuizStore(
+    (state) => state.createdQuiz.settings.question_order
   );
 
   const { updateSettings } = useCreateQuizStore();
@@ -50,6 +53,7 @@ export default function Settings() {
                 undefined,
                 parseInt(e.target.value) || 0,
                 undefined,
+                undefined,
                 undefined
               )
             }
@@ -77,6 +81,7 @@ export default function Settings() {
                 undefined,
                 undefined,
                 value as "immediate" | "after_close" | "manual",
+                undefined,
                 undefined
               )
             }>
@@ -93,7 +98,7 @@ export default function Settings() {
                 Immediately after submission
               </SelectItem>
               <SelectItem className="px-4 py-2" value="manual">
-                Manually by teacher/assistant
+                Manually
               </SelectItem>
             </SelectContent>
           </Select>
@@ -117,7 +122,8 @@ export default function Settings() {
                 undefined,
                 undefined,
                 undefined,
-                value as "immediate" | "after_close" | "manual"
+                value as "immediate" | "after_close" | "manual",
+                undefined
               )
             }>
             <SelectTrigger className="w-full px-4 py-3">
@@ -134,6 +140,43 @@ export default function Settings() {
               </SelectItem>
               <SelectItem className="px-4 py-2" value="manual">
                 Manually
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="setting-card bg-bg-secondary rounded-sm p-5 border border-border-default">
+        <div className="setting-card-header flex items-center gap-3 mb-4">
+          <div className="setting-icon w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-primary">
+            <Shuffle className="w-5 h-5" />
+          </div>
+          <div className="setting-title font-semibold">Questions Order</div>
+        </div>
+
+        <div className="form-group">
+          <Select
+            value={question_order}
+            onValueChange={(value) =>
+              updateSettings(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                value as "random" | "created"
+              )
+            }>
+            <SelectTrigger className="w-full px-4 py-3">
+              <SelectValue placeholder="Select visibility" />
+            </SelectTrigger>
+            <SelectContent
+              className="min-w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]"
+              align="start">
+              <SelectItem className="px-4 py-2" value="created">
+                Same order for all students
+              </SelectItem>
+              <SelectItem className="px-4 py-2" value="random">
+                Random for every student
               </SelectItem>
             </SelectContent>
           </Select>

@@ -194,6 +194,7 @@ export default function CreateQuestions() {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
+          // Store as base64 string
           setQuestionImage(questionIndex, event.target.result as string);
         }
       };
@@ -233,15 +234,17 @@ export default function CreateQuestions() {
     <>
       {/* Collapse Mode Toggle */}
       {questions.length > 0 && (
-        <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center gap-3">
-            <FontAwesomeIcon
-              icon={isCollapseMode ? faEye : faEyeSlash}
-              className="text-gray-600"
-            />
-            <span className="font-medium text-gray-700">
-              {isCollapseMode ? "Collapse Mode: ON" : "Collapse Mode: OFF"}
-            </span>
+        <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon
+                icon={isCollapseMode ? faEye : faEyeSlash}
+                className="text-gray-600"
+              />
+              <span className="font-medium text-gray-700">
+                {isCollapseMode ? "Collapse Mode: ON" : "Collapse Mode: OFF"}
+              </span>
+            </div>
             <span className="text-sm text-gray-500">
               ({questions.length} question{questions.length !== 1 ? "s" : ""})
             </span>
@@ -251,7 +254,7 @@ export default function CreateQuestions() {
             variant="outline"
             size="sm"
             onClick={toggleCollapseMode}
-            className="flex items-center gap-2">
+            className="flex items-center gap-2 w-full sm:w-auto">
             <FontAwesomeIcon
               icon={isCollapseMode ? faChevronDown : faChevronUp}
               size="sm"
@@ -266,38 +269,38 @@ export default function CreateQuestions() {
           <div
             key={index}
             className={cn(
-              "question-card bg-white rounded-xl shadow-md border border-gray-200 relative transition-all hover:shadow-lg",
-              isQuestionExpanded(index) ? "p-6 mb-6" : "p-4 mb-3"
+              "bg-white rounded-xl shadow-md border border-gray-200 relative transition-all hover:shadow-lg",
+              isQuestionExpanded(index) ? "p-4 sm:p-6 mb-6" : "p-4 mb-3"
             )}>
             {/* Collapsed View */}
             {!isQuestionExpanded(index) && (
               <div
-                className="flex items-center justify-between cursor-pointer"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer"
                 onClick={() => toggleQuestionExpansion(index)}>
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
                   <div className="question-number text-lg font-semibold text-blue-600 flex-shrink-0">
                     Q{index + 1}
                   </div>
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="text-gray-700 truncate">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 w-full">
+                    <span className="text-gray-700 line-clamp-2 sm:truncate flex-1">
                       {getQuestionPreview(question)}
                     </span>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                    <div className="flex flex-wrap gap-2 mt-1 sm:mt-0">
+                      <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
                         {question.selection_type === "single"
                           ? "Single"
                           : "Multiple"}
                       </span>
-                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
                         {question.points} pts
                       </span>
-                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded">
+                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
                         {question.choices.length} options
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <FontAwesomeIcon
                     icon={faChevronDown}
                     className="text-gray-400"
@@ -333,11 +336,11 @@ export default function CreateQuestions() {
                   </Button>
                 </div>
 
-                <div className="question-header flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <div className="question-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200">
                   <div className="question-number text-xl font-semibold text-blue-600">
                     Question {index + 1}
                   </div>
-                  <div className="question-actions flex gap-3">
+                  <div className="question-actions flex flex-wrap gap-2">
                     {/* Collapse button (only visible in collapse mode) */}
                     {isCollapseMode && (
                       <button
@@ -408,7 +411,7 @@ export default function CreateQuestions() {
                   <label className="block mb-2 font-medium text-gray-700">
                     Question Image (Optional)
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     {question.image ? (
                       <div className="relative">
                         <Image
@@ -452,7 +455,7 @@ export default function CreateQuestions() {
                   <label className="block mb-2 font-medium text-gray-700">
                     Choices Type
                   </label>
-                  <div className="question-type-select grid grid-cols-2 gap-3">
+                  <div className="question-type-select grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {QUESTION_TYPES.map((type) => (
                       <div
                         key={type.value}
@@ -507,52 +510,54 @@ export default function CreateQuestions() {
                           <div
                             key={optIdx}
                             className="option-item flex flex-col gap-3 p-3 mb-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center gap-3 w-full">
-                              <div
-                                className={cn(
-                                  "option-checkbox w-6 h-6 border-2 rounded-full flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer",
-                                  option.is_correct
-                                    ? question.selection_type === "single"
-                                      ? "bg-blue-600 border-blue-600"
-                                      : "bg-green-500 border-green-500"
-                                    : "bg-white border-gray-400"
-                                )}
-                                onClick={() =>
-                                  handleChoiceClick(
-                                    index,
-                                    optIdx,
-                                    option.is_correct
-                                  )
-                                }>
-                                <span
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                              <div className="flex items-start gap-3 w-full">
+                                <div
                                   className={cn(
-                                    "text-white text-xs font-bold",
-                                    option.is_correct ? "" : "hidden"
-                                  )}>
-                                  {question.selection_type === "single"
-                                    ? "●"
-                                    : "✓"}
-                                </span>
-                              </div>
-                              <div className="option-text flex-1">
-                                <Textarea
-                                  className="form-control w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-full resize-y overflow-y-auto"
-                                  placeholder="Option text"
-                                  style={{
-                                    wordBreak: "break-word",
-                                    overflowWrap: "break-word",
-                                  }}
-                                  value={option.text}
-                                  onChange={(e) =>
-                                    editQuestionChoice(index, optIdx, {
-                                      text: e.target.value,
-                                    })
-                                  }
-                                />
+                                    "option-checkbox w-6 h-6 border-2 rounded-full flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer",
+                                    option.is_correct
+                                      ? question.selection_type === "single"
+                                        ? "bg-blue-600 border-blue-600"
+                                        : "bg-green-500 border-green-500"
+                                      : "bg-white border-gray-400"
+                                  )}
+                                  onClick={() =>
+                                    handleChoiceClick(
+                                      index,
+                                      optIdx,
+                                      option.is_correct
+                                    )
+                                  }>
+                                  <span
+                                    className={cn(
+                                      "text-white text-xs font-bold",
+                                      option.is_correct ? "" : "hidden"
+                                    )}>
+                                    {question.selection_type === "single"
+                                      ? "●"
+                                      : "✓"}
+                                  </span>
+                                </div>
+                                <div className="flex-1 w-full">
+                                  <Textarea
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                                    placeholder="Option text"
+                                    style={{
+                                      wordBreak: "break-word",
+                                      overflowWrap: "break-word",
+                                    }}
+                                    value={option.text}
+                                    onChange={(e) =>
+                                      editQuestionChoice(index, optIdx, {
+                                        text: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
                               </div>
                               <button
                                 type="button"
-                                className="delete-option-btn w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 transition-colors flex-shrink-0"
+                                className="delete-option-btn w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 transition-colors flex-shrink-0 self-end sm:self-auto"
                                 onClick={() => {
                                   deleteQuestionChoice(index, optIdx);
                                 }}>
@@ -564,11 +569,11 @@ export default function CreateQuestions() {
                             </div>
 
                             {/* Choice Image Section */}
-                            <div className="ml-9">
+                            <div className="sm:ml-9">
                               <label className="block mb-2 font-medium text-gray-700 text-sm">
                                 Option Image (Optional)
                               </label>
-                              <div className="flex items-center gap-4">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                 {option.image ? (
                                   <div className="relative">
                                     <Image

@@ -382,7 +382,11 @@ export default function QDashboard({
           <p className="text-gray-500 text-center max-w-md">
             Try adjusting your filters or create a new quiz to get started.
           </p>
-          <Button className="mt-4">Create Quiz</Button>
+          <Button
+            className="mt-4"
+            onClick={() => updateCurrentMainView("create")}>
+            Create Quiz
+          </Button>
         </div>
       )}
     </>

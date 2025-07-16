@@ -7,10 +7,10 @@ import axios, {
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_NextBaseURL,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  //   Accept: "application/json",
+  // },
   // Remove withCredentials: true from here
 });
 

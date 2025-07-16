@@ -24,7 +24,9 @@ export default function Home() {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="mb-8 text-center">
-            <h1 className="font-['Pacifico'] text-4xl text-primary">EduSite</h1>
+            <h1 className="font-['Pacifico'] text-4xl text-primary">
+              EduTrack
+            </h1>
             <p className="mt-2 text-lg text-gray-600/90">
               Sign in to access your dashboard
             </p>
@@ -36,7 +38,7 @@ export default function Home() {
           </div>
 
           <footer className="mt-6 text-center text-sm text-gray-600/90 space-y-1">
-            <div>© 2025 EduSite LMS • Version 1.0.0</div>
+            <div>© 2025 EduTrack LMS • Version 1.0.0</div>
             <div>
               Created &amp; Designed by <strong>WebSet</strong>
             </div>

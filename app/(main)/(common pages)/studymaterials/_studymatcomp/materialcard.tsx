@@ -161,12 +161,7 @@ const MaterialCard: React.FC<MaterialCardProps> = React.memo(
         // Open link in new tab
         window.open(file_url, "_blank");
       } else if (file_url && type === "pdf") {
-        const base = DJANGO_API_URL.endsWith("api/")
-          ? DJANGO_API_URL.slice(0, -4)
-          : DJANGO_API_URL;
-
-        const resource = file_url.startsWith("/") ? file_url : `/${file_url}`;
-        window.open(`${base}${resource}`, "_blank");
+        window.open(file_url);
       }
     }, [type, file_url]);
 

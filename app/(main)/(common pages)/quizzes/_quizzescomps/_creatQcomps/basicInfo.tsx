@@ -154,6 +154,10 @@ export default function BasicInfoComp() {
                 )
               }
               className="w-full pl-4 pr-10 py-2.5 bg-bg-tertiary border border-border-default rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none transition-all duration-300">
+              {/* Add placeholder option */}
+              <option value={0} disabled className="text-text-secondary/50">
+                Select Grade
+              </option>
               {availGrades.map((grade) => (
                 <option key={grade.id} value={grade.id}>
                   {grade.name}

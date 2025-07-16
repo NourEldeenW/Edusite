@@ -100,8 +100,8 @@ const defaultQuiz: Quiz = {
   settings: {
     question_order: "created",
     timer_minutes: 0,
-    score_visibility: "manual",
-    answers_visibility: "manual",
+    score_visibility: "immediate",
+    answers_visibility: "immediate",
   },
 };
 

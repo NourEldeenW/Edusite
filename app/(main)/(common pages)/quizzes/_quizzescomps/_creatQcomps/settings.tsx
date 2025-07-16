@@ -43,11 +43,11 @@ export default function Settings() {
             Duration (minutes)
           </label>
           <Input
-            type="number"
+            type="text"
             id="timer-minutes"
             className="w-full px-4 py-3 border-border-default"
             value={timer_minutes}
-            min="0"
+            pattern={"[0-9]"}
             onChange={(e) =>
               updateSettings(
                 undefined,

@@ -39,10 +39,15 @@ import AddSessionForm from "../../sessions/_sessions_comps/addSessionForm";
 
 const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
+/**
+ * Main view types for the attendance management page
+ * - SESSIONDETAILS_TAB: Shows session selection and details
+ * - TAKINGATTENDANCE_TAB: Shows attendance form for a selected session
+ */
 type mainViewType = "SESSIONDETAILS_TAB" | "TAKINGATTENDANCE_TAB";
 
 interface AttendanceManagementPageProps {
-  access: string;
+  access: string; // Access token for API requests
 }
 
 export interface Attendance_StudentType {
@@ -51,6 +56,9 @@ export interface Attendance_StudentType {
   student_id: string;
 }
 
+/**
+ * Represents a session object
+ */
 interface SessionType {
   id: number;
   date: string;
@@ -65,6 +73,9 @@ interface SessionType {
   has_test: boolean;
 }
 
+/**
+ * Context type for providing student data to components
+ */
 interface AllStudentsContextType {
   allStudents: Student[];
   setAllStudents: React.Dispatch<React.SetStateAction<Student[]>>;
@@ -77,7 +88,9 @@ export const AllStudentsContext = createContext<AllStudentsContextType>({
   refetchSession: () => {},
 });
 
-// Memoized Session Info Component
+/**
+ * Memoized component to display session information
+ */
 const SessionInfoSection = React.memo(
   ({
     session,
@@ -156,18 +169,22 @@ const SessionInfoSection = React.memo(
 
 SessionInfoSection.displayName = "SessionInfoSection";
 
-// Memoized Grade Filter Component
+/**
+ * Memoized component for grade selection filter
+ */
 const GradeFilter = React.memo(
   ({
     availGrades,
     selectedGrade,
     setSelectedGrade,
+    setSelectedCenter,
     setSelectedSessionId,
     gradeMap,
   }: {
     availGrades: GradeType[];
     selectedGrade: number | null;
     setSelectedGrade: React.Dispatch<React.SetStateAction<number | null>>;
+    setSelectedCenter: React.Dispatch<React.SetStateAction<number | null>>;
     setSelectedSessionId: React.Dispatch<React.SetStateAction<number | null>>;
     gradeMap: Map<number, GradeType>;
   }) => (
@@ -177,7 +194,8 @@ const GradeFilter = React.memo(
         value={selectedGrade?.toString() || ""}
         onValueChange={(value) => {
           setSelectedGrade(value ? Number(value) : null);
-          setSelectedSessionId(null);
+          setSelectedCenter(null); // Reset center when grade changes
+          setSelectedSessionId(null); // Reset session when grade changes
         }}>
         <SelectTrigger className="w-full bg-white border-gray-300">
           <SelectValue placeholder="Choose a grade" />
@@ -199,16 +217,73 @@ const GradeFilter = React.memo(
 
 GradeFilter.displayName = "GradeFilter";
 
-// Memoized Session Filter Component
+/**
+ * Memoized component for center selection filter
+ */
+const CenterFilter = React.memo(
+  ({
+    availCenters,
+    selectedCenter,
+    setSelectedCenter,
+    setSelectedSessionId,
+    centerMap,
+  }: {
+    availCenters: GradeType[];
+    selectedCenter: number | null;
+    setSelectedCenter: React.Dispatch<React.SetStateAction<number | null>>;
+    setSelectedSessionId: React.Dispatch<React.SetStateAction<number | null>>;
+    centerMap: Map<number, GradeType>;
+  }) => (
+    <div className="space-y-2">
+      <Label className="text-gray-700">Select Center</Label>
+      <Select
+        value={selectedCenter?.toString() || ""}
+        onValueChange={(value) => {
+          setSelectedCenter(value ? Number(value) : null);
+          setSelectedSessionId(null); // Reset session when center changes
+        }}
+        disabled={!availCenters.length} // Disable if no centers available
+      >
+        <SelectTrigger className="w-full bg-white border-gray-300">
+          <SelectValue
+            placeholder={
+              availCenters.length === 0
+                ? "Select a grade first"
+                : "Choose a center"
+            }
+          />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 shadow-lg">
+          {availCenters.map((center) => (
+            <SelectItem
+              key={center.id}
+              value={center.id.toString()}
+              className="text-gray-700 hover:bg-gray-50 focus:bg-gray-50">
+              {centerMap.get(center.id)?.name || center.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+);
+
+CenterFilter.displayName = "CenterFilter";
+
+/**
+ * Memoized component for session selection filter
+ */
 const SessionFilter = React.memo(
   ({
     selectedGrade,
+    selectedCenter,
     filteredSessions,
     selectedSessionId,
     handleSessionChange,
     dateFormatter,
   }: {
     selectedGrade: number | null;
+    selectedCenter: number | null;
     filteredSessions: SessionType[];
     selectedSessionId: number | null;
     handleSessionChange: (sessionId: number) => void;
@@ -219,12 +294,16 @@ const SessionFilter = React.memo(
       <Select
         value={selectedSessionId?.toString() || ""}
         onValueChange={(value) => value && handleSessionChange(parseInt(value))}
-        disabled={!selectedGrade || !filteredSessions.length}>
+        disabled={
+          !selectedGrade || !selectedCenter || !filteredSessions.length
+        }>
         <SelectTrigger className="w-full bg-white border-gray-300">
           <SelectValue
             placeholder={
               !selectedGrade
                 ? "Select a grade first"
+                : !selectedCenter
+                ? "Select a center first"
                 : filteredSessions.length === 0
                 ? "No sessions available"
                 : "Choose a session"
@@ -238,9 +317,14 @@ const SessionFilter = React.memo(
                 key={session.id}
                 value={session.id.toString()}
                 className="text-gray-700 hover:bg-gray-50 focus:bg-gray-50">
-                <div className="flex gap-5 items-center">
-                  <span className="font-medium">{session.title}</span>
-                  <span className="text-xs text-gray-500">
+                <div className="flex gap-3 min-w-0">
+                  <span className="font-medium truncate">{session.title}</span>
+                  <span
+                    className="text-xs text-gray-500 truncate max-w-[200px]"
+                    title={session.notes || "No description"}>
+                    {session.notes || "No description"}
+                  </span>
+                  <span className="text-xs text-gray-400">
                     {dateFormatter.format(new Date(session.date))}
                   </span>
                 </div>
@@ -248,9 +332,9 @@ const SessionFilter = React.memo(
             ))
           ) : (
             <div className="py-3 px-4 text-sm text-gray-500 text-center">
-              {selectedGrade
-                ? "No sessions found for this grade"
-                : "Please select a grade"}
+              {selectedGrade && selectedCenter
+                ? "No sessions found for this grade and center"
+                : "Please select both grade and center"}
             </div>
           )}
         </SelectContent>
@@ -261,13 +345,18 @@ const SessionFilter = React.memo(
 
 SessionFilter.displayName = "SessionFilter";
 
-// Main Component
+/**
+ * Main Attendance Management Page Component
+ */
 export default function AttendanceManagementPage({
   access,
 }: AttendanceManagementPageProps) {
+  // State management
   const [sessions, setSessions] = useState<SessionType[]>([]);
   const [availGrades, setAvailGrades] = useState<GradeType[]>([]);
+  const [availCenters, setAvailCenters] = useState<GradeType[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
+  const [selectedCenter, setSelectedCenter] = useState<number | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
     null
   );
@@ -285,10 +374,14 @@ export default function AttendanceManagementPage({
 
   // Memoized computations
   const filteredSessions = useMemo(() => {
-    return selectedGrade
-      ? sessions.filter((session) => session.grade.id === selectedGrade)
-      : [];
-  }, [selectedGrade, sessions]);
+    if (!selectedGrade || !selectedCenter) return [];
+
+    return sessions.filter(
+      (session) =>
+        session.grade.id === selectedGrade &&
+        session.center.id === selectedCenter
+    );
+  }, [selectedGrade, selectedCenter, sessions]);
 
   const selectedSessionDetails = useMemo(() => {
     return selectedSessionId
@@ -302,6 +395,12 @@ export default function AttendanceManagementPage({
     return map;
   }, [availGrades]);
 
+  const centerMap = useMemo(() => {
+    const map = new Map<number, GradeType>();
+    availCenters.forEach((center) => map.set(center.id, center));
+    return map;
+  }, [availCenters]);
+
   const dateFormatter = useMemo(() => {
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
@@ -311,6 +410,7 @@ export default function AttendanceManagementPage({
     });
   }, []);
 
+  // Navigation handlers
   const navigateToTakingAttendance = useCallback(() => {
     setMainView("TAKINGATTENDANCE_TAB");
   }, []);
@@ -326,7 +426,7 @@ export default function AttendanceManagementPage({
     setMainView("SESSIONDETAILS_TAB");
   }, [preventNavigation]);
 
-  // Fetch initial data (sessions and grades) once
+  // Fetch initial data (sessions, grades, centers)
   useEffect(() => {
     if (initialDataFetched.current) return;
 
@@ -335,7 +435,7 @@ export default function AttendanceManagementPage({
 
     const fetchData = async () => {
       try {
-        const [sessionsRes, gradesRes] = await Promise.all([
+        const [sessionsRes, gradesRes, centersRes] = await Promise.all([
           api.get(`${djangoApi}session/sessions/`, {
             headers: { Authorization: `Bearer ${access}` },
             signal: controller.signal,
@@ -344,10 +444,15 @@ export default function AttendanceManagementPage({
             headers: { Authorization: `Bearer ${access}` },
             signal: controller.signal,
           }),
+          api.get(`${djangoApi}accounts/centers/`, {
+            headers: { Authorization: `Bearer ${access}` },
+            signal: controller.signal,
+          }),
         ]);
 
         setSessions(sessionsRes.data);
         setAvailGrades(gradesRes.data);
+        setAvailCenters(centersRes.data);
 
         // Cache sessions
         sessionsRes.data.forEach((session: SessionType) => {
@@ -358,6 +463,7 @@ export default function AttendanceManagementPage({
       } catch (error) {
         if (!controller.signal.aborted) {
           console.error("Fetch error:", error);
+          showToast("Failed to load initial data", "error");
         }
       } finally {
         setIsLoading(false);
@@ -369,7 +475,7 @@ export default function AttendanceManagementPage({
     return () => controller.abort();
   }, [access]);
 
-  // Fetch students for grade only if not in cache
+  // Fetch students for selected grade
   useEffect(() => {
     if (!selectedGrade) return;
 
@@ -392,18 +498,21 @@ export default function AttendanceManagementPage({
         setAllStudents(res.data);
       } catch (error) {
         console.error("Error fetching students:", error);
+        showToast("Failed to load students for this grade", "error");
       }
     };
 
     fetchStudents();
   }, [selectedGrade, access]);
 
+  // Update homework status when session changes
   useEffect(() => {
     if (selectedSessionDetails) {
       setHasHomework(selectedSessionDetails.has_homework);
     }
   }, [selectedSessionDetails]);
 
+  // Handle session selection
   const handleSessionChange = useCallback(
     async (sessionId: number) => {
       setSelectedSessionId(sessionId);
@@ -429,6 +538,9 @@ export default function AttendanceManagementPage({
         setSessions((prev) =>
           prev.map((s) => (s.id === sessionId ? res.data : s))
         );
+      } catch (error) {
+        console.error("Error fetching session details:", error);
+        showToast("Failed to load session details", "error");
       } finally {
         setIsSessionLoading(false);
       }
@@ -436,6 +548,7 @@ export default function AttendanceManagementPage({
     [access]
   );
 
+  // Refetch session data
   const refetchSession = useCallback(
     async (sessionId: number) => {
       try {
@@ -451,6 +564,7 @@ export default function AttendanceManagementPage({
         );
       } catch (error) {
         console.error("Error refetching session:", error);
+        showToast("Failed to refresh session data", "error");
       }
     },
     [access]
@@ -468,6 +582,7 @@ export default function AttendanceManagementPage({
 
   const homeworkValue = useMemo(() => hasHomework, [hasHomework]);
 
+  // Loading state
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -478,10 +593,14 @@ export default function AttendanceManagementPage({
         {mainView === "SESSIONDETAILS_TAB" ? (
           <SessionDetailsView
             availGrades={availGrades}
+            availCenters={availCenters}
             selectedGrade={selectedGrade}
+            selectedCenter={selectedCenter}
             setSelectedGrade={setSelectedGrade}
+            setSelectedCenter={setSelectedCenter}
             setSelectedSessionId={setSelectedSessionId}
             gradeMap={gradeMap}
+            centerMap={centerMap}
             filteredSessions={filteredSessions}
             selectedSessionId={selectedSessionId}
             handleSessionChange={handleSessionChange}
@@ -507,13 +626,19 @@ export default function AttendanceManagementPage({
   );
 }
 
-// Sub-components for better organization
+/**
+ * Component for session details view
+ */
 const SessionDetailsView = ({
   availGrades,
+  availCenters,
   selectedGrade,
+  selectedCenter,
   setSelectedGrade,
+  setSelectedCenter,
   setSelectedSessionId,
   gradeMap,
+  centerMap,
   filteredSessions,
   selectedSessionId,
   handleSessionChange,
@@ -524,10 +649,14 @@ const SessionDetailsView = ({
   access,
 }: {
   availGrades: GradeType[];
+  availCenters: GradeType[];
   selectedGrade: number | null;
+  selectedCenter: number | null;
   setSelectedGrade: React.Dispatch<React.SetStateAction<number | null>>;
+  setSelectedCenter: React.Dispatch<React.SetStateAction<number | null>>;
   setSelectedSessionId: React.Dispatch<React.SetStateAction<number | null>>;
   gradeMap: Map<number, GradeType>;
+  centerMap: Map<number, GradeType>;
   filteredSessions: SessionType[];
   selectedSessionId: number | null;
   handleSessionChange: (sessionId: number) => void;
@@ -550,17 +679,28 @@ const SessionDetailsView = ({
       <AddSessionForm access={access}></AddSessionForm>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    {/* Three-column filter section */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <GradeFilter
         availGrades={availGrades}
         selectedGrade={selectedGrade}
         setSelectedGrade={setSelectedGrade}
+        setSelectedCenter={setSelectedCenter}
         setSelectedSessionId={setSelectedSessionId}
         gradeMap={gradeMap}
       />
 
+      <CenterFilter
+        availCenters={availCenters}
+        selectedCenter={selectedCenter}
+        setSelectedCenter={setSelectedCenter}
+        setSelectedSessionId={setSelectedSessionId}
+        centerMap={centerMap}
+      />
+
       <SessionFilter
         selectedGrade={selectedGrade}
+        selectedCenter={selectedCenter}
         filteredSessions={filteredSessions}
         selectedSessionId={selectedSessionId}
         handleSessionChange={handleSessionChange}
@@ -568,6 +708,7 @@ const SessionDetailsView = ({
       />
     </div>
 
+    {/* Session information */}
     {selectedSessionDetails && (
       <SessionInfoSection
         session={selectedSessionDetails}
@@ -575,6 +716,7 @@ const SessionDetailsView = ({
       />
     )}
 
+    {/* Attendance table */}
     <div className="flex-1 overflow-y-auto">
       <div className="h-full bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         {isSessionLoading ? (
@@ -605,6 +747,9 @@ const SessionDetailsView = ({
 
 SessionDetailsView.displayName = "SessionDetailsView";
 
+/**
+ * Component for taking attendance view
+ */
 const TakingAttendanceView = ({
   navigateBack,
   selectedSessionDetails,
@@ -651,6 +796,7 @@ const TakingAttendanceView = ({
       </div>
     </div>
 
+    {/* Session information */}
     {selectedSessionDetails && (
       <SessionInfoSection
         session={selectedSessionDetails}
@@ -658,6 +804,7 @@ const TakingAttendanceView = ({
       />
     )}
 
+    {/* Attendance form */}
     <div className="flex-1 bg-bg-secondary rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">
@@ -679,7 +826,9 @@ const TakingAttendanceView = ({
 
 TakingAttendanceView.displayName = "TakingAttendanceView";
 
-// Additional helper components
+/**
+ * Loading skeleton placeholder
+ */
 const LoadingSkeleton = () => (
   <div className="flex flex-col h-full p-6">
     <div className="flex flex-col gap-6 mb-8">
@@ -692,15 +841,13 @@ const LoadingSkeleton = () => (
       </div>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <div className="space-y-2">
-        <Skeleton className="h-5 w-32 bg-gray-200" />
-        <Skeleton className="h-10 w-full bg-gray-200" />
-      </div>
-      <div className="space-y-2">
-        <Skeleton className="h-5 w-32 bg-gray-200" />
-        <Skeleton className="h-10 w-full bg-gray-200" />
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {[...Array(3)].map((_, i) => (
+        <div className="space-y-2" key={i}>
+          <Skeleton className="h-5 w-32 bg-gray-200" />
+          <Skeleton className="h-10 w-full bg-gray-200" />
+        </div>
+      ))}
     </div>
 
     <div className="mb-8">
@@ -715,6 +862,9 @@ const LoadingSkeleton = () => (
 
 LoadingSkeleton.displayName = "LoadingSkeleton";
 
+/**
+ * Component for empty session state
+ */
 const EmptySessionView = ({
   onTakeAttendance,
 }: {
@@ -741,6 +891,9 @@ const EmptySessionView = ({
 
 EmptySessionView.displayName = "EmptySessionView";
 
+/**
+ * Component for session selection prompt
+ */
 const SelectSessionPrompt = () => (
   <div className="flex flex-col items-center justify-center h-full py-12">
     <div className="bg-gray-100 rounded-full p-5 mb-6">
@@ -750,8 +903,8 @@ const SelectSessionPrompt = () => (
       Select a Session
     </h3>
     <p className="text-gray-500 text-center max-w-md">
-      Choose a grade and session from the dropdowns above to view or manage
-      attendance records.
+      Choose a grade, center, and session from the dropdowns above to view or
+      manage attendance records.
     </p>
   </div>
 );

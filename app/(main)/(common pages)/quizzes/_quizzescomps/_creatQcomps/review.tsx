@@ -4,9 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon, ClockIcon, EyeIcon, ListOrderedIcon } from "lucide-react";
 import { formatUserDate } from "@/lib/formatDate";
+import useQuizStore_initial from "@/lib/stores/onlineQuizStores/initialData";
 
 export default function Review() {
   const quizData = useCreateQuizStore((state) => state.createdQuiz);
+  const availGrades = useQuizStore_initial.getState().availGrades;
+  const availCenters = useQuizStore_initial.getState().availCenters;
 
   // Calculate total points
   const totalPoints = quizData.questions.reduce((sum, q) => sum + q.points, 0);
@@ -36,7 +39,11 @@ export default function Review() {
               <span className="text-sm font-medium text-gray-500">Grade</span>
               <Badge className="bg-indigo-100 text-indigo-700 px-3 py-1 text-base">
                 {quizData.basic_info.grade_id
-                  ? `Grade ${quizData.basic_info.grade_id}`
+                  ? `${
+                      availGrades.find(
+                        (g) => g.id === quizData.basic_info.grade_id
+                      )?.name
+                    }`
                   : "—"}
               </Badge>
             </div>
@@ -59,7 +66,12 @@ export default function Review() {
                       key={i}
                       className="border border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
                       <div className="font-medium text-gray-800">
-                        {center.center_id}
+                        {
+                          availCenters.find(
+                            (c) =>
+                              c.id === quizData.basic_info.centers[i].center_id
+                          )?.name
+                        }
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
                         <span className="font-medium">Dates:</span>
@@ -152,7 +164,9 @@ export default function Review() {
                   Question Order
                 </span>
                 <p className="font-semibold text-gray-800 capitalize">
-                  {quizData.settings.question_order}
+                  {quizData.settings.question_order === "created"
+                    ? "Same for All"
+                    : "Random"}
                 </p>
               </div>
             </div>

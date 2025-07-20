@@ -5,13 +5,13 @@ type question_type = "mcq";
 type selection_type = "single" | "multiple";
 type order_Type = "random" | "created";
 
-interface Choice {
+export interface Choice {
   text: string;
   is_correct: boolean;
   image?: string | null;
 }
 
-interface Settings {
+export interface Settings {
   timer_minutes: number;
   score_visibility: visibility;
   answers_visibility: visibility;

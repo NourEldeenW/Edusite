@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
+import useQEditStore from "@/lib/stores/onlineQuizStores/editQuiz";
 
 // Date formatting helper
 const formatDate = (dateString: string): string => {
@@ -58,6 +59,8 @@ export default function QDashboard({
   const { allQuizzes, availGrades } = useQuizStore_initial();
 
   const { updateCurrentMainView } = useViewStore();
+
+  const setSelectedQuizId = useQEditStore((state) => state.setSelectedQuizId);
 
   const selectedGradeName = useMemo(
     () =>
@@ -271,12 +274,12 @@ export default function QDashboard({
 
       {/* Quiz Grid */}
       {filteredSessions.length > 0 ? (
-        <div className="quiz-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSessions.map((quiz) => {
             return (
               <div
                 key={quiz.id}
-                className="quiz-card bg-white rounded-md overflow-hidden shadow-sm border border-border-default transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-lg">
+                className="bg-bg-secondary rounded-xl overflow-hidden shadow-sm border border-border-default transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-lg">
                 <div className="quiz-header p-5 pb-4 border-b border-border-default flex-1">
                   <h2 className="quiz-title text-xl font-semibold mb-2">
                     {quiz.title}
@@ -362,11 +365,19 @@ export default function QDashboard({
                 </div>
 
                 <div className="quiz-actions p-4 flex gap-3">
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1 hover:text-text-inverse">
                     View Results
                   </Button>
-                  <Button variant="outline" className="flex-1">
-                    Details
+                  <Button
+                    variant="outline"
+                    className="flex-1 hover:text-text-inverse"
+                    onClick={() => {
+                      setSelectedQuizId(quiz.id);
+                      updateCurrentMainView("edit");
+                    }}>
+                    Edit
                   </Button>
                 </div>
               </div>

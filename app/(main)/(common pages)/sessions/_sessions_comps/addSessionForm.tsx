@@ -35,22 +35,30 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import useSessionsStore from "@/lib/stores/SessionsStores/allSessionsStore";
 
+// Define error types
+type FormErrors = {
+  title?: string;
+  date?: string;
+  grade_id?: string;
+  center_id?: string;
+  non_field_errors?: string[];
+};
+const initialFormData = {
+  title: "",
+  notes: "",
+  grade_id: "",
+  center_id: "",
+  has_homework: false,
+  has_test: false,
+};
+
 export default function AddSessionForm({ access }: { access: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
-
-  const initialFormData = {
-    title: "",
-    notes: "",
-    grade_id: "",
-    center_id: "",
-    has_homework: false,
-    has_test: false,
-  };
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const { addSession } = useSessionsStore();
-
   const [formData, setFormData] = useState(initialFormData);
 
   const availCenters = useAvail_Grades_CentersStore(
@@ -64,9 +72,19 @@ export default function AddSessionForm({ access }: { access: string }) {
   );
   const setGrades = useAvail_Grades_CentersStore((state) => state.updateGrades);
 
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!dialogOpen) {
+      setFormData(initialFormData);
+      setDate(new Date());
+      setErrors({});
+    }
+  }, [dialogOpen]);
+
   useEffect(() => {
     const fetchInitials = async () => {
       try {
+        setLoading(true);
         const [grades, centers] = await Promise.all([
           api.get(
             `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}accounts/grades/`,
@@ -79,37 +97,83 @@ export default function AddSessionForm({ access }: { access: string }) {
         ]);
         setCenters(centers.data);
         setGrades(grades.data);
-      } catch {
+      } catch (error) {
         showToast("Error fetching available grades and centers", "error");
+        console.error("Fetching error:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchInitials();
   }, [access, setCenters, setGrades]);
+
+  // Client-side validation
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = "Title is required";
+    }
+
+    if (!date) {
+      newErrors.date = "Please select a date";
+    }
+
+    if (!formData.grade_id) {
+      newErrors.grade_id = "Please select a grade";
+    }
+
+    if (!formData.center_id) {
+      newErrors.center_id = "Please select a center";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when selection is made
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleCheckboxChange = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const handleDateChange = (date: Date | undefined) => {
+    setDate(date);
+
+    // Clear date error when date is selected
+    if (errors.date) {
+      setErrors((prev) => ({ ...prev, date: undefined }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!date) {
-      showToast("Please select a valid date", "error");
+    // Validate before submission
+    if (!validateForm()) {
       return;
     }
 
-    const formattedDate = format(date, "yyyy-MM-dd");
+    const formattedDate = format(date!, "yyyy-MM-dd");
 
     const payload = {
       ...formData,
@@ -125,23 +189,54 @@ export default function AddSessionForm({ access }: { access: string }) {
       );
       addSession(res.data);
       showToast("Session created successfully", "success");
-      setFormData(initialFormData);
-      setDate(new Date());
       setDialogOpen(false);
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       console.error("Session creation error:", error);
-      showToast("Failed to create session", "error");
+
+      // Handle backend validation errors
+      if (error.response?.status === 400) {
+        const backendErrors = error.response.data;
+        const formattedErrors: FormErrors = {};
+
+        // Map backend errors to our form fields
+        Object.keys(backendErrors).forEach((key) => {
+          if (key in initialFormData || key === "date") {
+            formattedErrors[key as keyof FormErrors] = Array.isArray(
+              backendErrors[key]
+            )
+              ? backendErrors[key].join(" ")
+              : backendErrors[key];
+          } else {
+            // Handle non-field errors
+            formattedErrors.non_field_errors =
+              formattedErrors.non_field_errors || [];
+            formattedErrors.non_field_errors.push(backendErrors[key]);
+          }
+        });
+
+        setErrors(formattedErrors);
+        showToast("Please fix the form errors", "error");
+      } else {
+        showToast("Failed to create session", "error");
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Helper function to determine input error styling
+  const getInputClass = (fieldName: keyof FormErrors) =>
+    errors[fieldName]
+      ? "border-error focus:ring-error focus:border-error"
+      : "border-border-default focus:ring-primary";
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 bg-primary hover:bg-primary-hover hover:text-text-invers text-text-inverse">
+          className="gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 bg-primary hover:bg-primary-hover text-text-inverse">
           Add Session
         </Button>
       </DialogTrigger>
@@ -155,12 +250,26 @@ export default function AddSessionForm({ access }: { access: string }) {
           </DialogDescription>
         </DialogHeader>
 
+        {/* Display non-field errors */}
+        {errors.non_field_errors && (
+          <div className="bg-error-bg border border-error rounded-md p-3 mb-4">
+            <h3 className="font-medium text-error">Form Errors:</h3>
+            <ul className="list-disc pl-5 mt-1">
+              {errors.non_field_errors.map((error, index) => (
+                <li key={index} className="text-error">
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title" className="font-medium">
-                Session Title
+                Session Title <span className="text-error">*</span>
               </Label>
               <Input
                 id="title"
@@ -170,18 +279,25 @@ export default function AddSessionForm({ access }: { access: string }) {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Enter session title"
-                className="focus:ring-primary bg-bg-secondary border-border-default text-text-primary"
+                className={`focus:ring-2 ${getInputClass("title")}`}
               />
+              {errors.title && (
+                <p className="text-error text-sm">{errors.title}</p>
+              )}
             </div>
 
             {/* Date Picker */}
             <div className="space-y-2">
-              <Label className="font-medium">Session Date</Label>
+              <Label className="font-medium">
+                Session Date <span className="text-error">*</span>
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal h-10 bg-bg-secondary border-border-default text-text-primary hover:bg-bg-secondary ">
+                    className={`w-full justify-start text-left font-normal h-10 text-text-primary hover:bg-bg-secondary ${
+                      errors.date ? "border-error" : "border-border-default"
+                    }`}>
                     <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
                     {date ? format(date, "PPP") : <span>Pick a date</span>}
                   </Button>
@@ -190,11 +306,14 @@ export default function AddSessionForm({ access }: { access: string }) {
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleDateChange}
                     className="bg-white rounded-md border"
                   />
                 </PopoverContent>
               </Popover>
+              {errors.date && (
+                <p className="text-error text-sm">{errors.date}</p>
+              )}
             </div>
 
             {/* Notes */}
@@ -216,14 +335,19 @@ export default function AddSessionForm({ access }: { access: string }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Grade Selector */}
               <div className="space-y-2 w-full">
-                <Label className="font-medium">Grade</Label>
+                <Label className="font-medium">
+                  Grade <span className="text-error">*</span>
+                </Label>
                 <Select
                   value={formData.grade_id}
                   onValueChange={(value) =>
                     handleSelectChange("grade_id", value)
                   }
                   required>
-                  <SelectTrigger className="h-10 bg-bg-secondary border-border-default text-text-primary w-full">
+                  <SelectTrigger
+                    className={`h-10 bg-bg-secondary text-text-primary w-full ${
+                      errors.grade_id ? "border-error" : "border-border-default"
+                    }`}>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
                   <SelectContent className="bg-bg-base border-border-default">
@@ -237,18 +361,28 @@ export default function AddSessionForm({ access }: { access: string }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.grade_id && (
+                  <p className="text-error text-sm">{errors.grade_id}</p>
+                )}
               </div>
 
               {/* Center Selector */}
               <div className="space-y-2">
-                <Label className="font-medium">Center</Label>
+                <Label className="font-medium">
+                  Center <span className="text-error">*</span>
+                </Label>
                 <Select
                   value={formData.center_id}
                   onValueChange={(value) =>
                     handleSelectChange("center_id", value)
                   }
                   required>
-                  <SelectTrigger className="h-10 bg-bg-secondary border-border-default text-text-primary w-full">
+                  <SelectTrigger
+                    className={`h-10 bg-bg-secondary text-text-primary w-full ${
+                      errors.center_id
+                        ? "border-error"
+                        : "border-border-default"
+                    }`}>
                     <SelectValue placeholder="Select center" />
                   </SelectTrigger>
                   <SelectContent className="bg-bg-base border-border-default">
@@ -262,6 +396,9 @@ export default function AddSessionForm({ access }: { access: string }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.center_id && (
+                  <p className="text-error text-sm">{errors.center_id}</p>
+                )}
               </div>
             </div>
 
@@ -305,11 +442,9 @@ export default function AddSessionForm({ access }: { access: string }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setFormData(initialFormData);
-              }}
-              className="min-w-[100px] bg-bg-secondary text-text-primary border-border-default">
+              onClick={() => setDialogOpen(false)}
+              className="min-w-[100px] bg-bg-secondary text-text-primary border-border-default"
+              disabled={loading}>
               Cancel
             </Button>
             <Button

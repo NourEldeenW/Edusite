@@ -5,7 +5,7 @@ type MainView =
   | "create"
   | "submissions"
   | "stuSub_Details"
-  | "quizDetails";
+  | "edit";
 
 interface StateType {
   mainView: MainView;

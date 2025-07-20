@@ -158,6 +158,30 @@ const links = {
         />
       ),
     },
+    {
+      href: "/sessions",
+      key: "sessions",
+      name: "Sessions",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBuildingUser}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/quizzes",
+      key: "quizzes",
+      name: "Online Quizzes",
+      icon: (
+        <FontAwesomeIcon
+          icon={faFilePen}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
   ],
   student: [],
 };

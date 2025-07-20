@@ -6,18 +6,24 @@ import { useEffect, useState } from "react";
 import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
 import CreateQuiz from "./createQuiz";
 import { api } from "@/lib/axiosinterceptor";
+import QEdit from "./QEdit";
 
 const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
 export default function Main({ access }: { access: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refetchcount, setRefetchcount] = useState(0);
   const { updateAccess, updateGrades, updateCenters, updateQuizzes } =
     useQuizStore_initial();
   const { mainView } = useViewStore();
   useEffect(() => {
     updateAccess(access);
   }, [access, updateAccess]);
+
+  const triggerRefetch = () => {
+    setRefetchcount((prev) => prev + 1);
+  };
 
   useEffect(() => {
     if (!access) return;
@@ -50,11 +56,13 @@ export default function Main({ access }: { access: string }) {
     };
 
     fetch_initials();
-  }, [access, updateCenters, updateGrades, updateQuizzes]);
+  }, [access, updateCenters, updateGrades, updateQuizzes, refetchcount]);
 
   switch (mainView) {
     case "dashboard":
       return <QDashboard isLoading={isLoading} error={error} />;
+    case "edit":
+      return <QEdit triggerRefetch={triggerRefetch} />;
     case "create":
       return <CreateQuiz />;
     default:

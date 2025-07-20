@@ -16,6 +16,7 @@ import {
   Eye,
   School,
   Trash2,
+  UsersRound,
   X,
 } from "lucide-react";
 import useAvail_Grades_CentersStore from "@/lib/stores/SessionsStores/store";
@@ -136,7 +137,9 @@ export default function Main({ access }: { access: string }) {
 
       data[session.id] = {
         total,
-        attended: session.students.length,
+        attended: session.students.filter(
+          (s) => s.center_id === session.center?.id
+        ).length,
       };
     });
 
@@ -478,7 +481,7 @@ export default function Main({ access }: { access: string }) {
                       <div className="my-4 border-t border-border-default dark:border-gray-700"></div>
 
                       {/* Details section */}
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                             <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -505,6 +508,20 @@ export default function Main({ access }: { access: string }) {
                               {session.date
                                 ? formatUserDate(session.date, false)
                                 : "No time set"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                            <UsersRound className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Total Attendance
+                            </h4>
+                            <p className="font-medium mt-1">
+                              {session.students.length}
                             </p>
                           </div>
                         </div>
@@ -560,7 +577,7 @@ export default function Main({ access }: { access: string }) {
                             </div>
                             <div>
                               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Attendance
+                                Attendance (from {session.center.name})
                               </h4>
                               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 {attended} of {total} students

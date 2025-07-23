@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
 import useQEditStore from "@/lib/stores/onlineQuizStores/editQuiz";
+import useSubmissionsStore from "@/lib/stores/onlineQuizStores/submissions";
 
 // Date formatting helper
 const formatDate = (dateString: string): string => {
@@ -61,6 +62,10 @@ export default function QDashboard({
   const { updateCurrentMainView } = useViewStore();
 
   const setSelectedQuizId = useQEditStore((state) => state.setSelectedQuizId);
+
+  const setSelectedQuizId_Submissions = useSubmissionsStore(
+    (state) => state.setSelectedQuizId
+  );
 
   const selectedGradeName = useMemo(
     () =>
@@ -367,7 +372,11 @@ export default function QDashboard({
                 <div className="quiz-actions p-4 flex gap-3">
                   <Button
                     variant="outline"
-                    className="flex-1 hover:text-text-inverse">
+                    className="flex-1 hover:text-text-inverse"
+                    onClick={() => {
+                      setSelectedQuizId_Submissions(quiz.id);
+                      updateCurrentMainView("submissions");
+                    }}>
                     View Results
                   </Button>
                   <Button

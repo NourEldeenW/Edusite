@@ -6,9 +6,9 @@ import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect } from "react";
-import QuizEditInfoCard from "./editQcomps/editSettings";
-import EditQuestions from "./editQcomps/editQuestions";
-import SaveChangesButton from "./editQcomps/saveButton";
+import QuizEditInfoCard from "./_editQcomps/editSettings";
+import EditQuestions from "./_editQcomps/editQuestions";
+import SaveChangesButton from "./_editQcomps/saveButton";
 
 export default function QEdit({
   triggerRefetch,

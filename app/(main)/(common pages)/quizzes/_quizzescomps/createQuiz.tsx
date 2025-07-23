@@ -66,11 +66,8 @@ export default function CreateQuiz() {
         }
 
         for (const [index, question] of quizData.questions.entries()) {
-          if (!question.text.trim() && !question.image) {
-            showToast(
-              `Question ${index + 1} text or image is required`,
-              "error"
-            );
+          if (!question.text.trim()) {
+            showToast(`Question ${index + 1} text is required`, "error");
             return false;
           }
 

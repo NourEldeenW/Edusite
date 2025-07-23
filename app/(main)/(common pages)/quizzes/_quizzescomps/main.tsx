@@ -7,6 +7,7 @@ import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
 import CreateQuiz from "./createQuiz";
 import { api } from "@/lib/axiosinterceptor";
 import QEdit from "./QEdit";
+import QSubmissions from "./Qsubmissions";
 
 const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -65,6 +66,8 @@ export default function Main({ access }: { access: string }) {
       return <QEdit triggerRefetch={triggerRefetch} />;
     case "create":
       return <CreateQuiz />;
+    case "submissions":
+      return <QSubmissions />;
     default:
       return <QDashboard isLoading={isLoading} error={error} />;
   }

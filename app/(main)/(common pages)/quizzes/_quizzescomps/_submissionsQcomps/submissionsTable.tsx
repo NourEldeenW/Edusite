@@ -5,7 +5,10 @@ import { FilterPopover } from "../../../students/_students comps/tabledata";
 import {
   Building2,
   Check,
+  Eye,
+  MoreVertical,
   Phone,
+  Trash2,
   User,
   UserCircle,
   Users,
@@ -29,6 +32,26 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatUserDate } from "@/lib/formatDate";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { api } from "@/lib/axiosinterceptor";
+import { toast } from "sonner";
 
 export default function SubmissionsTable() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +59,13 @@ export default function SubmissionsTable() {
   const [selectedStatus, setSelectedStatus] = useState<string | number>("all");
   const [isFilterCentersOpen, setIsFilterCentersOpen] = useState(false);
   const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteSubmissionId, setDeleteSubmissionId] = useState<number | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  const access = useQuizStore_initial((state) => state.access);
   const availableCenters = useQuizStore_initial((state) => state.availCenters);
   const submissions = useSubmissionsStore((state) => state.submissions);
 
@@ -48,6 +78,11 @@ export default function SubmissionsTable() {
     ],
     []
   );
+
+  const handleDeleteClick = (studentId: number) => {
+    setDeleteSubmissionId(studentId);
+    setIsDeleteDialogOpen(true);
+  };
 
   const selectedCenterName = useMemo(
     () =>
@@ -80,46 +115,59 @@ export default function SubmissionsTable() {
   );
 
   const tablefilterddata = useMemo(() => {
-    return submissions.filter((submission) => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const normalizedQuery = normalizePhone(query);
-        const hasDigits = normalizedQuery.length > 0;
+    return submissions
+      .filter((submission) => {
+        // Search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const normalizedQuery = normalizePhone(query);
+          const hasDigits = normalizedQuery.length > 0;
 
-        const matchesSearch =
-          submission.student_name.toLowerCase().includes(query) ||
-          (hasDigits &&
-            normalizePhone(submission.phone_number).includes(
-              normalizedQuery
-            )) ||
-          (hasDigits &&
-            submission.parent_phone_number &&
-            normalizePhone(submission.parent_phone_number).includes(
-              normalizedQuery
-            ));
+          const matchesSearch =
+            submission.student_name.toLowerCase().includes(query) ||
+            (hasDigits &&
+              normalizePhone(submission.phone_number).includes(
+                normalizedQuery
+              )) ||
+            (hasDigits &&
+              submission.parent_phone_number &&
+              normalizePhone(submission.parent_phone_number).includes(
+                normalizedQuery
+              ));
 
-        if (!matchesSearch) return false;
-      }
+          if (!matchesSearch) return false;
+        }
 
-      // Center filter
-      if (
-        selectedCenter !== "all" &&
-        submission.center.id.toString() !== selectedCenter
-      ) {
-        return false;
-      }
+        // Center filter
+        if (
+          selectedCenter !== "all" &&
+          submission.center.id.toString() !== selectedCenter
+        ) {
+          return false;
+        }
 
-      // Status filter
-      if (
-        selectedStatus !== "all" &&
-        submission.submission_status !== selectedStatus
-      ) {
-        return false;
-      }
+        // Status filter
+        if (
+          selectedStatus !== "all" &&
+          submission.submission_status !== selectedStatus
+        ) {
+          return false;
+        }
 
-      return true;
-    });
+        return true;
+      })
+      .sort((a, b) => {
+        const aTime = a.start_time ? new Date(a.start_time).getTime() : 0;
+        const bTime = b.start_time ? new Date(b.start_time).getTime() : 0;
+
+        // Primary sort: start time (newest first)
+        if (aTime !== bTime) {
+          return bTime - aTime;
+        }
+
+        // Secondary sort: name (for entries with same/no start time)
+        return a.student_name.localeCompare(b.student_name);
+      });
   }, [
     normalizePhone,
     searchQuery,
@@ -127,6 +175,30 @@ export default function SubmissionsTable() {
     selectedStatus,
     submissions,
   ]);
+
+  const handleDeleteStudent = useCallback(async () => {
+    if (!deleteSubmissionId) return;
+
+    setIsLoading(true);
+    try {
+      await api.delete(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}onlinequiz/quizzes/${
+          useSubmissionsStore.getState().selectedQuizId
+        }/submissions/${deleteSubmissionId}/`,
+        {
+          headers: { Authorization: `Bearer ${access}` },
+        }
+      );
+      toast.success("Submission deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete Submission:", error);
+      toast.error("Failed to delete Submission. Please try again.");
+    } finally {
+      setIsLoading(false);
+      setIsDeleteDialogOpen(false);
+      setDeleteSubmissionId(null);
+    }
+  }, [access, deleteSubmissionId]);
 
   return (
     <>
@@ -210,13 +282,13 @@ export default function SubmissionsTable() {
               <TableHead className="text-left">Status</TableHead>
               <TableHead className="text-left">Time taken</TableHead>
               <TableHead className="text-left">Score</TableHead>
-              <TableHead className="text-left">View</TableHead>
+              <TableHead className="text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tablefilterddata.length > 0 ? (
               tablefilterddata.map((student) => (
-                <TableRow key={student.id} className="hover:bg-bg-subtle">
+                <TableRow key={student.student} className="hover:bg-bg-subtle">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -278,12 +350,41 @@ export default function SubmissionsTable() {
                   <TableCell>
                     {student.score ? student.score : "no score"}
                   </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Actions"
+                          className="hover:bg-gray-300">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-fit p-3">
+                        <DropdownMenuLabel className="text-sm font-medium text-text-secondary">
+                          Actions
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle">
+                          <Eye className="h-4 w-4 text-text-secondary" />
+                          <span>View Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(student.id)}
+                          className="flex items-center gap-2 px-2 py-2 text-sm text-error hover:cursor-pointer focus:bg-error/20">
+                          <Trash2 className="h-4 w-4 text-error" />
+                          <span>Delete Submission</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={9}
                   className="text-center py-8 text-text-secondary">
                   No students found matching your filters
                 </TableCell>
@@ -292,6 +393,38 @@ export default function SubmissionsTable() {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              submission.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button
+                variant="outline"
+                className="hover:bg-bg-secondary"
+                disabled={isLoading}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteStudent}
+                disabled={isLoading}>
+                {isLoading ? "Deleting..." : "Delete"}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

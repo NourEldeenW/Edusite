@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, LogOut } from "lucide-react";
 
@@ -18,7 +18,6 @@ interface NavbarProps {
 const api = process.env.NEXT_PUBLIC_localurl;
 
 export default function Navbar({ links }: NavbarProps) {
-  const router = useRouter();
   const current = usePathname();
   const [wid, setWid] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(true);
@@ -45,8 +44,7 @@ export default function Navbar({ links }: NavbarProps) {
   const handleLogout = async () => {
     setLoadingKey("logout");
     await fetch(`${api}auth/logout`);
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   };
 
   const closeMobileMenu = () => {

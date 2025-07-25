@@ -278,74 +278,85 @@ export default function SubmissionsTable() {
         </div>
       </div>
 
-      <div className="w-full bg-bg-secondary p-4 rounded-xl border border-border-default px-10 pt-6">
-        <Table>
+      {/* Added overflow-x-auto for horizontal scrolling */}
+      <div className="w-full bg-bg-secondary rounded-xl border border-border-default overflow-x-auto">
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="text-left">Name</TableHead>
-              <TableHead className="text-left">Contact</TableHead>
-              <TableHead className="text-left">Center</TableHead>
-              <TableHead className="text-left">Start time</TableHead>
-              <TableHead className="text-left">End time</TableHead>
-              <TableHead className="text-left">Status</TableHead>
-              <TableHead className="text-left">Time taken</TableHead>
-              <TableHead className="text-left">Score</TableHead>
-              {/* NEW COLUMNS ADDED HERE */}
-              <TableHead className="text-left">Score Released</TableHead>
-              <TableHead className="text-left">Answers Released</TableHead>
-              <TableHead className="text-left">Actions</TableHead>
+              <TableHead className="min-w-[160px] text-left">Name</TableHead>
+              <TableHead className="min-w-[120px] text-left">Contact</TableHead>
+              <TableHead className="min-w-[120px] text-left">
+                Start time
+              </TableHead>
+              <TableHead className="min-w-[120px] text-left">
+                End time
+              </TableHead>
+              <TableHead className="min-w-[100px] text-left">Status</TableHead>
+              <TableHead className="min-w-[80px] text-left">
+                Time taken
+              </TableHead>
+              <TableHead className="min-w-[60px] text-left">Score</TableHead>
+              <TableHead className="min-w-[60px] text-left">
+                Score Released
+              </TableHead>
+              <TableHead className="min-w-[60px] text-left">
+                Answers Released
+              </TableHead>
+              <TableHead className="min-w-[50px] text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tablefilterddata.length > 0 ? (
               tablefilterddata.map((student) => (
                 <TableRow key={student.student} className="hover:bg-bg-subtle">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
+                  <TableCell className="py-2 px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary" />
                       </div>
-                      <div>
-                        <p className="font-medium text-text-primary">
+                      <div className="min-w-0">
+                        <p className="font-medium text-text-primary whitespace-nowrap truncate">
                           {student.student_name}
                         </p>
+                        <Badge
+                          variant="outline"
+                          className="gap-1 text-xs px-1 py-0">
+                          <Building2 className="h-3 w-3" />
+                          <span className="truncate max-w-[100px]">
+                            {student.center.name}
+                          </span>
+                        </Badge>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
+                  <TableCell className="py-2 px-3">
+                    <div className="flex flex-col gap-0.5 text-sm">
+                      <div className="flex items-center gap-1 whitespace-nowrap">
                         <Phone className="h-3 w-3 text-text-secondary" />
                         <span>{student.phone_number}</span>
                       </div>
                       {student.parent_phone_number && (
-                        <div className="flex items-center gap-2 text-sm text-text-secondary">
+                        <div className="flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
                           <Users className="h-3 w-3" />
                           <span>{student.parent_phone_number}</span>
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="gap-1">
-                      <Building2 className="h-4 w-4" />
-                      {student.center.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.start_time
                       ? formatUserDate(student.start_time)
                       : "no start time"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.end_time
                       ? formatUserDate(student.end_time)
                       : "no end time"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3">
                     <Badge
                       variant="outline"
-                      className={`${
+                      className={`text-xs px-1.5 py-0.5 ${
                         student.submission_status === "Finished"
                           ? "bg-success/10 text-success border-success/30"
                           : student.submission_status === "In Progress"
@@ -355,55 +366,54 @@ export default function SubmissionsTable() {
                       {student.submission_status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.time_taken ? student.time_taken : "no time"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.score ? student.score : "no score"}
                   </TableCell>
-                  {/* NEW CELLS ADDED HERE */}
-                  <TableCell>
+                  <TableCell className="py-2 px-3">
                     <div className="flex justify-start">
                       {student.is_score_released ? (
-                        <CheckCircle2 className="h-5 w-5 text-success" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                       ) : (
-                        <XCircle className="h-5 w-5 text-destructive" />
+                        <XCircle className="h-4 w-4 text-destructive" />
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3">
                     <div className="flex justify-start">
                       {student.are_answers_released ? (
-                        <CheckCircle2 className="h-5 w-5 text-success" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                       ) : (
-                        <XCircle className="h-5 w-5 text-destructive" />
+                        <XCircle className="h-4 w-4 text-destructive" />
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2 px-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           aria-label="Actions"
-                          className="hover:bg-gray-300">
+                          className="h-8 w-8 hover:bg-gray-300">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-fit p-3">
-                        <DropdownMenuLabel className="text-sm font-medium text-text-secondary">
+                      <DropdownMenuContent align="end" className="w-fit p-2">
+                        <DropdownMenuLabel className="text-xs font-medium text-text-secondary px-2 py-1">
                           Actions
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle">
-                          <Eye className="h-4 w-4 text-text-secondary" />
+                        <DropdownMenuItem className="flex items-center gap-2 px-2 py-1 text-xs hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle">
+                          <Eye className="h-3 w-3 text-text-secondary" />
                           <span>View Details</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(student.id)}
-                          className="flex items-center gap-2 px-2 py-2 text-sm text-error hover:cursor-pointer focus:bg-error/20">
-                          <Trash2 className="h-4 w-4 text-error" />
+                          className="flex items-center gap-2 px-2 py-1 text-xs text-error hover:cursor-pointer focus:bg-error/20">
+                          <Trash2 className="h-3 w-3 text-error" />
                           <span>Delete Submission</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>

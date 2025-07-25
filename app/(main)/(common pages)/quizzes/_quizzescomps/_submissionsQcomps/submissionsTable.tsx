@@ -70,6 +70,7 @@ export default function SubmissionsTable() {
   const access = useQuizStore_initial((state) => state.access);
   const availableCenters = useQuizStore_initial((state) => state.availCenters);
   const submissions = useSubmissionsStore((state) => state.submissions);
+  const settings = useSubmissionsStore((state) => state.settings);
 
   const statusOptions = useMemo(
     () => [
@@ -296,12 +297,18 @@ export default function SubmissionsTable() {
                 Time taken
               </TableHead>
               <TableHead className="min-w-[60px] text-left">Score</TableHead>
-              <TableHead className="min-w-[60px] text-left">
-                Score Released
-              </TableHead>
-              <TableHead className="min-w-[60px] text-left">
-                Answers Released
-              </TableHead>
+              {settings?.score_visibility === "manual" && (
+                <TableHead className="min-w-[60px] text-left">
+                  Score Released
+                </TableHead>
+              )}
+
+              {settings?.answers_visibility === "manual" && (
+                <TableHead className="min-w-[60px] text-left">
+                  Answers Released
+                </TableHead>
+              )}
+
               <TableHead className="min-w-[50px] text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -372,24 +379,30 @@ export default function SubmissionsTable() {
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.score ? student.score : "no score"}
                   </TableCell>
-                  <TableCell className="py-2 px-3">
-                    <div className="flex justify-start">
-                      {student.is_score_released ? (
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2 px-3">
-                    <div className="flex justify-start">
-                      {student.are_answers_released ? (
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                  </TableCell>
+                  {settings?.score_visibility === "manual" && (
+                    <TableCell className="py-2 px-3">
+                      <div className="flex justify-start">
+                        {student.is_score_released ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
+
+                  {settings?.answers_visibility === "manual" && (
+                    <TableCell className="py-2 px-3">
+                      <div className="flex justify-start">
+                        {student.are_answers_released ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
+
                   <TableCell className="py-2 px-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

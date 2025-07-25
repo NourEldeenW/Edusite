@@ -10,6 +10,7 @@ import {
   faHourglassHalf,
   faRotate,
   faUsers,
+  faUndo, // Added undo icon
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState, useRef } from "react";
@@ -24,6 +25,7 @@ export default function QSubmissions() {
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isReleasingScore, setIsReleasingScore] = useState(false);
   const [isReleasingAnswers, setIsReleasingAnswers] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false); // New state for undo operation
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const updateCurrentMainView = useViewStore(
     (state) => state.updateCurrentMainView
@@ -146,6 +148,39 @@ export default function QSubmissions() {
     }
   };
 
+  const handleUndo = async () => {
+    if (isUndoing) return;
+
+    setIsUndoing(true);
+    try {
+      await api.post(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}onlinequiz/quizzes/${
+          useSubmissionsStore.getState().selectedQuizId
+        }/release-all/`,
+        {
+          release_answers: false,
+          release_score: false,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${useQuizStore_initial.getState().access}`,
+          },
+        }
+      );
+      // Trigger refresh to show updated data
+      setCounter((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error undoing release:", error);
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
+  // Check if we should show the undo button
+  const showUndoButton = submissions.some(
+    (s) => s.is_score_released || s.are_answers_released
+  );
+
   return (
     <>
       <div className="header mb-8 flex justify-between items-center flex-wrap">
@@ -202,6 +237,33 @@ export default function QSubmissions() {
                 </>
               ) : (
                 "Release Answers"
+              )}
+            </Button>
+          )}
+
+          {/* Undo Release Button */}
+          {showUndoButton && (
+            <Button
+              onClick={handleUndo}
+              disabled={isUndoing}
+              variant="outline"
+              className={`gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 ${
+                isUndoing ? "opacity-75 cursor-not-allowed" : ""
+              }`}>
+              {isUndoing ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faRotate}
+                    spin
+                    className="h-4 w-4 mr-2"
+                  />
+                  Undoing...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faUndo} className="h-4 w-4 mr-2" />
+                  Undo Release
+                </>
               )}
             </Button>
           )}

@@ -16,7 +16,6 @@ export default async function page() {
     return redirect(`/${role}/dashboard`);
   const acces = headerData.get("access");
   if (!acces) redirect("/login");
-  // const acc_name = headerData.get("username");
 
   return <StudentManagementPage access={acces} />;
 }

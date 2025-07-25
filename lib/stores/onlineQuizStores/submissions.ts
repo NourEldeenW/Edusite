@@ -1,5 +1,6 @@
 import { GradeType } from "@/app/(main)/(common pages)/students/_students comps/main";
 import { create } from "zustand";
+import { settings } from "./editQuiz";
 
 type submission_status = "Not Started" | "In Progress" | "Finished";
 
@@ -23,17 +24,21 @@ export interface submission {
 interface stateType {
   selectedQuizId: number | null;
   submissions: submission[];
+  settings: settings | null;
 
   setSelectedQuizId: (id: number | null) => void;
   updateSubmissions: (submissions: submission[]) => void;
+  updateSettings: (settings: settings) => void;
 }
 
 const useSubmissionsStore = create<stateType>((set) => ({
   selectedQuizId: null,
   submissions: [],
+  settings: null,
 
   setSelectedQuizId: (id) => set({ selectedQuizId: id }),
   updateSubmissions: (submissions) => set({ submissions }),
+  updateSettings: (settings) => set({ settings }),
 }));
 
 export default useSubmissionsStore;

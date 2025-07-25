@@ -13,6 +13,8 @@ import {
   UserCircle,
   Users,
   X,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   Command,
@@ -190,6 +192,12 @@ export default function SubmissionsTable() {
         }
       );
       toast.success("Submission deleted successfully!");
+      const index = submissions.findIndex(
+        (submission) => submission.id === deleteSubmissionId
+      );
+      if (index !== -1) {
+        submissions[index].submission_status = "Not Started";
+      }
     } catch (error) {
       console.error("Failed to delete Submission:", error);
       toast.error("Failed to delete Submission. Please try again.");
@@ -198,7 +206,7 @@ export default function SubmissionsTable() {
       setIsDeleteDialogOpen(false);
       setDeleteSubmissionId(null);
     }
-  }, [access, deleteSubmissionId]);
+  }, [access, deleteSubmissionId, submissions]);
 
   return (
     <>
@@ -282,6 +290,9 @@ export default function SubmissionsTable() {
               <TableHead className="text-left">Status</TableHead>
               <TableHead className="text-left">Time taken</TableHead>
               <TableHead className="text-left">Score</TableHead>
+              {/* NEW COLUMNS ADDED HERE */}
+              <TableHead className="text-left">Score Released</TableHead>
+              <TableHead className="text-left">Answers Released</TableHead>
               <TableHead className="text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -350,6 +361,25 @@ export default function SubmissionsTable() {
                   <TableCell>
                     {student.score ? student.score : "no score"}
                   </TableCell>
+                  {/* NEW CELLS ADDED HERE */}
+                  <TableCell>
+                    <div className="flex justify-start">
+                      {student.is_score_released ? (
+                        <CheckCircle2 className="h-5 w-5 text-success" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-start">
+                      {student.are_answers_released ? (
+                        <CheckCircle2 className="h-5 w-5 text-success" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -384,7 +414,7 @@ export default function SubmissionsTable() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={11}
                   className="text-center py-8 text-text-secondary">
                   No students found matching your filters
                 </TableCell>

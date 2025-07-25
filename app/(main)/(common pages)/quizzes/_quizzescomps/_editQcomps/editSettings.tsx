@@ -224,7 +224,7 @@ export default function QuizEditInfoCard() {
                   Immediate after submission
                 </SelectItem>
                 <SelectItem value="after_close">After quiz closes</SelectItem>
-                <SelectItem value="manual">Manually by admin</SelectItem>
+                <SelectItem value="manual">Manually</SelectItem>
               </SelectContent>
             </Select>
           </div>

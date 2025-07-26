@@ -65,6 +65,11 @@ export default function Navbar({ links }: NavbarProps) {
     <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
   );
 
+  const isActiveLink = (href: string, currentPath: string) => {
+    // Check for exact match or if current path starts with the href
+    return currentPath === href || currentPath.startsWith(`${href}/`);
+  };
+
   return (
     <>
       {!isMobile ? (
@@ -94,7 +99,7 @@ export default function Navbar({ links }: NavbarProps) {
                 <li
                   key={l.key}
                   className={`group relative mb-4 hover:bg-white/10 rounded-xl transition-all duration-200 ${
-                    current === l.href ? "bg-white/15" : ""
+                    isActiveLink(l.href, current) ? "bg-white/15" : ""
                   }`}>
                   <Link
                     href={l.href}
@@ -185,7 +190,7 @@ export default function Navbar({ links }: NavbarProps) {
                 <li
                   key={l.key}
                   className={`mb-4 hover:bg-white/10 rounded-xl transition-all ${
-                    current === l.href ? "bg-white/15" : ""
+                    isActiveLink(l.href, current) ? "bg-white/15" : ""
                   }`}>
                   <Link
                     href={l.href}

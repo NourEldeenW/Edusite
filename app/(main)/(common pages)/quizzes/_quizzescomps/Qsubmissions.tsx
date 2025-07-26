@@ -196,6 +196,35 @@ export default function QSubmissions() {
         </Button>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Undo Release Button */}
+          {(settings?.answers_visibility === "manual" ||
+            settings?.score_visibility === "manual") &&
+            showUndoButton && (
+              <Button
+                onClick={handleUndo}
+                disabled={isUndoing}
+                variant="outline"
+                className={`gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 ${
+                  isUndoing ? "opacity-75 cursor-not-allowed" : ""
+                }`}>
+                {isUndoing ? (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faRotate}
+                      spin
+                      className="h-4 w-4 mr-2"
+                    />
+                    Undoing...
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faUndo} className="h-4 w-4 mr-2" />
+                    Undo Release
+                  </>
+                )}
+              </Button>
+            )}
+
           {settings?.score_visibility === "manual" && (
             <Button
               variant="outline"
@@ -237,33 +266,6 @@ export default function QSubmissions() {
                 </>
               ) : (
                 "Release Answers"
-              )}
-            </Button>
-          )}
-
-          {/* Undo Release Button */}
-          {showUndoButton && (
-            <Button
-              onClick={handleUndo}
-              disabled={isUndoing}
-              variant="outline"
-              className={`gap-2 text-sm hover:text-text-inverse h-9 flex-grow sm:flex-grow-0 ${
-                isUndoing ? "opacity-75 cursor-not-allowed" : ""
-              }`}>
-              {isUndoing ? (
-                <>
-                  <FontAwesomeIcon
-                    icon={faRotate}
-                    spin
-                    className="h-4 w-4 mr-2"
-                  />
-                  Undoing...
-                </>
-              ) : (
-                <>
-                  <FontAwesomeIcon icon={faUndo} className="h-4 w-4 mr-2" />
-                  Undo Release
-                </>
               )}
             </Button>
           )}

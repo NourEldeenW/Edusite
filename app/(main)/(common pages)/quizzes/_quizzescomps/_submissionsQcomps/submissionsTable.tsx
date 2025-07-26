@@ -53,7 +53,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { api } from "@/lib/axiosinterceptor";
-import { toast } from "sonner";
+import Link from "next/link";
+import { showToast } from "../../../students/_students comps/main";
 
 export default function SubmissionsTable() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +82,11 @@ export default function SubmissionsTable() {
     ],
     []
   );
+
+  // Added helper function to validate student ID
+  const isValidStudentId = useCallback((id: number | null): id is number => {
+    return id !== null && id !== undefined;
+  }, []);
 
   const handleDeleteClick = (studentId: number) => {
     setDeleteSubmissionId(studentId);
@@ -192,7 +198,7 @@ export default function SubmissionsTable() {
           headers: { Authorization: `Bearer ${access}` },
         }
       );
-      toast.success("Submission deleted successfully!");
+      showToast("Submission Deleted Successfully!", "success");
       const index = submissions.findIndex(
         (submission) => submission.id === deleteSubmissionId
       );
@@ -201,7 +207,7 @@ export default function SubmissionsTable() {
       }
     } catch (error) {
       console.error("Failed to delete Submission:", error);
-      toast.error("Failed to delete Submission. Please try again.");
+      showToast("Failed to delete Submission!", "error");
     } finally {
       setIsLoading(false);
       setIsDeleteDialogOpen(false);
@@ -419,13 +425,39 @@ export default function SubmissionsTable() {
                           Actions
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="flex items-center gap-2 px-2 py-1 text-xs hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle">
-                          <Eye className="h-3 w-3 text-text-secondary" />
-                          <span>View Details</span>
+                        <DropdownMenuItem className="p-0">
+                          {isValidStudentId(student.id) ? (
+                            <Link
+                              href={`/quizzes/${
+                                useSubmissionsStore.getState().selectedQuizId
+                              }/review/${student.id}`}
+                              className="flex items-center gap-2 px-2 py-1 text-xs w-full hover:text-text-inverse hover:cursor-pointer focus:bg-bg-subtle">
+                              <Eye className="h-3 w-3 text-text-secondary" />
+                              <span>View Details</span>
+                            </Link>
+                          ) : (
+                            <div
+                              className="flex items-center gap-2 px-2 py-1 text-xs w-full text-text-disabled"
+                              onClick={() =>
+                                showToast("Submission not available", "error")
+                              }>
+                              <Eye className="h-3 w-3 text-text-disabled" />
+                              <span>View Details</span>
+                            </div>
+                          )}
                         </DropdownMenuItem>
+
+                        {/* Delete Submission */}
                         <DropdownMenuItem
-                          onClick={() => handleDeleteClick(student.id)}
-                          className="flex items-center gap-2 px-2 py-1 text-xs text-error hover:cursor-pointer focus:bg-error/20">
+                          onClick={() =>
+                            isValidStudentId(student.id)
+                              ? handleDeleteClick(student.id)
+                              : showToast(
+                                  "Cannot delete incomplete submission",
+                                  "error"
+                                )
+                          }
+                          className="flex items-center gap-2 px-2 py-1 text-xs text-error hover:bg-error/10 focus:bg-error/20">
                           <Trash2 className="h-3 w-3 text-error" />
                           <span>Delete Submission</span>
                         </DropdownMenuItem>

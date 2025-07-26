@@ -7,7 +7,6 @@ import ErrorPage from "./_reviewcomps/errorPage";
 import Headers from "./_reviewcomps/headers";
 import { formatUserDate } from "@/lib/formatDate";
 import AnswersAndScores from "./_reviewcomps/A&S";
-import { Params } from "next/dist/server/request/params";
 
 interface apiDataType {
   id: number;
@@ -68,12 +67,12 @@ export const metadata: Metadata = {
   description: "Review your quiz performance and answers on EduSite.",
 };
 
-type PageProps = {
-  params: Params & {
+interface PageProps {
+  params: {
     quizid: string;
     subID: string;
   };
-};
+}
 
 const djangoAPI = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
 
@@ -148,7 +147,6 @@ async function SubmissionReviewContent({
     };
 
     if (role === "teacher" || role === "assistant") {
-      // Create a modified copy instead of mutating original
       const modifiedData = {
         ...submissionData,
         is_score_released: true,
@@ -173,8 +171,8 @@ async function SubmissionReviewContent({
   }
 }
 
-export default async function MainPage({ params }: PageProps) {
-  const { quizid, subID } = await params;
+export default function MainPage({ params }: PageProps) {
+  const { quizid, subID } = params;
 
   return (
     <Suspense fallback={<LoadingScreen />}>

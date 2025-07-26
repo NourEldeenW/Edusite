@@ -7,6 +7,7 @@ import ErrorPage from "./_reviewcomps/errorPage";
 import Headers from "./_reviewcomps/headers";
 import { formatUserDate } from "@/lib/formatDate";
 import AnswersAndScores from "./_reviewcomps/A&S";
+import { Params } from "next/dist/server/request/params";
 
 interface apiDataType {
   id: number;
@@ -68,7 +69,7 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  params: {
+  params: Params & {
     quizid: string;
     subID: string;
   };
@@ -173,8 +174,7 @@ async function SubmissionReviewContent({
 }
 
 export default async function MainPage({ params }: PageProps) {
-  // Fixed: Removed await from params
-  const { quizid, subID } = params;
+  const { quizid, subID } = await params;
 
   return (
     <Suspense fallback={<LoadingScreen />}>

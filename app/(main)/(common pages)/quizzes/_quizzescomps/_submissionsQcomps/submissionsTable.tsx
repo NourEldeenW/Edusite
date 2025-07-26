@@ -385,29 +385,26 @@ export default function SubmissionsTable() {
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
                     {student.score ? student.score : "no score"}
                   </TableCell>
-                  {settings?.score_visibility === "manual" && (
-                    <TableCell className="py-2 px-3">
-                      <div className="flex justify-start">
-                        {student.is_score_released ? (
-                          <CheckCircle2 className="h-4 w-4 text-success" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
 
-                  {settings?.answers_visibility === "manual" && (
-                    <TableCell className="py-2 px-3">
-                      <div className="flex justify-start">
-                        {student.are_answers_released ? (
-                          <CheckCircle2 className="h-4 w-4 text-success" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
+                  <TableCell className="py-2 px-3">
+                    <div className="flex justify-start">
+                      {student.is_score_released ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="py-2 px-3">
+                    <div className="flex justify-start">
+                      {student.are_answers_released ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  </TableCell>
 
                   <TableCell className="py-2 px-3">
                     <DropdownMenu>

@@ -147,9 +147,20 @@ async function SubmissionReviewContent({
     };
 
     if (role === "teacher" || role === "assistant") {
-      submissionData.is_score_released = true;
-      submissionData.are_answers_released = true;
+      // Create a modified copy instead of mutating original
+      const modifiedData = {
+        ...submissionData,
+        is_score_released: true,
+        are_answers_released: true,
+      };
+      return (
+        <>
+          <Headers {...data} />
+          <AnswersAndScores data={modifiedData} />
+        </>
+      );
     }
+
     return (
       <>
         <Headers {...data} />
@@ -162,7 +173,8 @@ async function SubmissionReviewContent({
 }
 
 export default async function MainPage({ params }: PageProps) {
-  const { quizid, subID } = await params; // Await params to resolve dynamic route parameters
+  // Fixed: Removed await from params
+  const { quizid, subID } = params;
 
   return (
     <Suspense fallback={<LoadingScreen />}>

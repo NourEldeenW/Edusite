@@ -169,7 +169,7 @@ export default function Headers(data: propsType) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Student Card */}
           <div className="flex items-start gap-4 p-5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex-shrink-0  items-center justify-center md:flex hidden">
               <FontAwesomeIcon icon={faUser} className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -186,7 +186,7 @@ export default function Headers(data: propsType) {
 
           {/* Quiz Card */}
           <div className="flex items-start gap-4 p-5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex-shrink-0 items-center justify-center md:flex hidden">
               <FontAwesomeIcon
                 icon={faFilePen}
                 className="h-6 w-6 text-primary"
@@ -211,7 +211,7 @@ export default function Headers(data: propsType) {
             )}>
             <div
               className={clsx(
-                "w-14 h-14 rounded-full flex-shrink-0 flex items-center justify-center",
+                "w-14 h-14 rounded-full flex-shrink-0 items-center justify-center md:flex hidden",
                 performanceStyles.iconContainer
               )}>
               <FontAwesomeIcon

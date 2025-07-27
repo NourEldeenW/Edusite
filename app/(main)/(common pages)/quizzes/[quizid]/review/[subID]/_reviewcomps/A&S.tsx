@@ -178,14 +178,17 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
 
               {/* Question Image */}
               {answer.question.image && (
-                <div className="image-container mb-4">
-                  <Image
-                    src={answer.question.image}
-                    alt="Question image"
-                    width={600}
-                    height={400}
-                    className="rounded-md"
-                  />
+                <div className="image-container mb-4 w-full">
+                  <div className="relative max-w-[700px] h-0 pb-[50%]">
+                    {/* Aspect ratio box */}
+                    <Image
+                      src={answer.question.image}
+                      alt="Question image"
+                      layout="fill"
+                      objectFit="contain"
+                      className="rounded-md"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -231,14 +234,17 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
                           )}
                         </div>
                         {choice.image && (
-                          <div className="choice-image mt-2">
-                            <Image
-                              src={choice.image}
-                              alt="Choice image"
-                              width={300}
-                              height={200}
-                              className="rounded-md"
-                            />
+                          <div className="choice-image mt-2 w-full">
+                            <div className="relative max-w-[700px] h-0 pb-[50%]">
+                              {/* Aspect ratio box */}
+                              <Image
+                                src={choice.image}
+                                alt="Choice image"
+                                layout="fill"
+                                objectFit="contain"
+                                className="rounded-md"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>

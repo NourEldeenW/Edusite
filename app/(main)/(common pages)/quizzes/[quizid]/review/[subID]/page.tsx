@@ -95,41 +95,13 @@ async function fetchSubmissionData(
   return await response.json();
 }
 
-// Get parameters from URL
-async function getRouteParams() {
-  if (typeof window !== "undefined") {
-    // Client-side: parse from URL
-    const path = window.location.pathname;
-    const match = path.match(/\/quizzes\/([^\/]+)\/review\/([^\/]+)/);
-    if (match) return { quizid: match[1], subID: match[2] };
-  }
-
-  // Server-side: use headers to get path
-  const headersList = await headers();
-  const path =
-    headersList.get("x-pathname") || headersList.get("referer") || "";
-  const match = path.match(/\/quizzes\/([^\/]+)\/review\/([^\/]+)/);
-  return match
-    ? { quizid: match[1], subID: match[2] }
-    : { quizid: "", subID: "" };
-}
-
-export default function MainPage() {
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      <SubmissionReviewContent />
-    </Suspense>
-  );
-}
-
-async function SubmissionReviewContent() {
-  // Get parameters from URL
-  const { quizid, subID } = await getRouteParams();
-
-  if (!quizid || !subID) {
-    return <ErrorPage />;
-  }
-
+async function SubmissionReviewContent({
+  quizid,
+  subID,
+}: {
+  quizid: string;
+  subID: string;
+}) {
   const headerData = await headers();
   const role = headerData.get("x-user-role");
   const access = headerData.get("access");
@@ -168,6 +140,7 @@ async function SubmissionReviewContent() {
     };
 
     if (role === "teacher" || role === "assistant") {
+      // Create a modified copy instead of mutating original
       const modifiedData = {
         ...submissionData,
         is_score_released: true,
@@ -187,10 +160,24 @@ async function SubmissionReviewContent() {
         <AnswersAndScores data={submissionData} />
       </>
     );
-  } catch (error) {
-    console.error("Failed to load submission:", error);
+  } catch {
     return <ErrorPage />;
   }
+}
+
+export default async function MainPage({
+  params,
+}: {
+  params: Promise<{ quizid: string; subID: string }>;
+}) {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <SubmissionReviewContent
+        quizid={(await params).quizid}
+        subID={(await params).subID}
+      />
+    </Suspense>
+  );
 }
 
 function LoadingScreen() {
@@ -201,8 +188,3 @@ function LoadingScreen() {
     </div>
   );
 }
-
-// Required dynamic configuration
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;

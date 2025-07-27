@@ -122,78 +122,88 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
   };
 
   const formatSelectionType = (type: "single" | "multiple") => {
-    return type === "single"
-      ? "Multiple Choice (Single Answer)"
-      : "Multiple Choice (Multiple Answers)";
+    return type === "single" ? "Single Answer" : "Multiple Answers";
   };
 
   return (
-    <div className=" mx-auto p-6 bg-gray-50 min-h-screen">
+    <div
+      className="mx-auto p-4 bg-gray-50 min-h-screen max-w-4xl"
+      style={{ scrollBehavior: "smooth" }}>
       {/* Header */}
       <h2 className="text-2xl font-semibold mb-4">Questions & Answers</h2>
 
+      {/* Quick Nav */}
+      {data.answers.length > 0 && (
+        <div className="question-nav mb-6 flex flex-wrap gap-2">
+          {data.answers.map((_, idx) => (
+            <a
+              key={idx}
+              href={`#question-${idx + 1}`}
+              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition">
+              Q{idx + 1}
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Questions List */}
-      <div className="question-list space-y-6">
+      <div className="question-list space-y-8">
         {data.answers.map((answer, index) => {
           const questionStatus = getQuestionStatus(answer);
 
           return (
             <div
+              id={`question-${index + 1}`}
               key={answer.id}
               className="question-card bg-white rounded-md p-6 shadow-sm border border-gray-200 animate-fadeIn"
               style={{ animationDelay: `${index * 0.1}s` }}>
-              {/* Question Header */}
-              <div className="question-header flex justify-between items-start mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-lg font-semibold">
-                      Question {index + 1}
+              {/* Compact Question Header */}
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">Q{index + 1}</span>
+                  {questionStatus && (
+                    <span
+                      className={`px-2 py-0.5 ${questionStatus.color} text-white rounded-full text-xs`}>
+                      {questionStatus.status}
                     </span>
-                    {questionStatus && (
-                      <span
-                        className={`px-2 py-1 ${questionStatus.color} text-white rounded-full text-xs`}>
-                        {questionStatus.status}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-500">
+                  )}
+                  <span className="text-xs text-gray-500">
                     {formatSelectionType(answer.selection_type)}
-                  </p>
+                  </span>
                 </div>
                 {data.is_score_released && (
                   <div
-                    className={`text-xl font-bold ${
+                    className={`text-sm font-bold ${
                       questionStatus?.textColor || "text-gray-600"
                     }`}>
-                    {answer.points_earned} point
+                    {answer.points_earned}pt
                     {answer.points_earned !== 1 ? "s" : ""}
                   </div>
                 )}
               </div>
 
               {/* Question Text */}
-              <div className="question-text text-lg font-medium mb-4">
+              <div className="question-text text-sm font-medium mb-4">
                 {answer.question.text}
               </div>
 
-              {/* Question Image */}
+              {/* Responsive Question Image */}
               {answer.question.image && (
-                <div className="image-container mb-4 w-full">
-                  <div className="relative max-w-[700px] h-0 pb-[50%]">
-                    {/* Aspect ratio box */}
-                    <Image
-                      src={answer.question.image}
-                      alt="Question image"
-                      layout="fill"
-                      objectFit="contain"
-                      className="rounded-md"
-                    />
-                  </div>
+                <div className="mb-4 w-full">
+                  <Image
+                    src={answer.question.image}
+                    alt="Question image"
+                    layout="responsive"
+                    width={800}
+                    height={450}
+                    objectFit="contain"
+                    className="rounded-md"
+                  />
                 </div>
               )}
 
-              {/* Options Container */}
-              <div className="options-container grid gap-3 mb-4">
+              {/* Options Grid */}
+              <div className="options-container grid grid-cols-1 md:grid-cols-2 gap-4">
                 {answer.choices.map((choice) => {
                   const isSelected = isChoiceSelected(
                     choice.id,
@@ -205,7 +215,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
                   return (
                     <div
                       key={choice.id}
-                      className={`option-item flex items-start gap-4 p-4 border rounded-sm ${choiceStyle}`}>
+                      className={`option-item flex items-start gap-3 p-3 border rounded-sm ${choiceStyle}`}>
                       <div
                         className={`option-checkbox w-5 h-5 border-2 rounded flex items-center justify-center mt-0.5 ${checkboxStyle}`}>
                         {(isSelected ||
@@ -214,37 +224,34 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
                         )}
                       </div>
                       <div className="option-content flex-1">
-                        <div
-                          className={`option-text ${
-                            isSelected ||
-                            (data.are_answers_released && choice.is_correct)
-                              ? "font-medium"
-                              : ""
-                          }`}>
+                        <div className="option-text text-sm">
                           {choice.text}
-                          {data.are_answers_released && choice.is_correct && (
-                            <span className="correct-answer-indicator ml-2 text-green-600 text-sm">
-                              (Correct Answer)
-                            </span>
-                          )}
-                          {isSelected && (
-                            <span className="student-answer-indicator ml-2 text-blue-600 text-sm">
-                              (Student&rsquo;s Answer)
-                            </span>
-                          )}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {data.are_answers_released && choice.is_correct && (
+                              <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">
+                                Correct
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded">
+                                Yours
+                              </span>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Responsive Choice Image */}
                         {choice.image && (
-                          <div className="choice-image mt-2 w-full">
-                            <div className="relative max-w-[700px] h-0 pb-[50%]">
-                              {/* Aspect ratio box */}
-                              <Image
-                                src={choice.image}
-                                alt="Choice image"
-                                layout="fill"
-                                objectFit="contain"
-                                className="rounded-md"
-                              />
-                            </div>
+                          <div className="mt-3 w-full">
+                            <Image
+                              src={choice.image}
+                              alt="Choice image"
+                              layout="responsive"
+                              width={400}
+                              height={225}
+                              objectFit="contain"
+                              className="rounded-md"
+                            />
                           </div>
                         )}
                       </div>
@@ -257,14 +264,14 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
         })}
       </div>
 
-      {/* No Data Messages */}
+      {/* Compact No Data Message */}
       {!data.are_answers_released && !data.is_score_released && (
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
-          <div className="text-gray-500">
-            <XMarkIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium mb-2">Results Not Available</h3>
-            <p>The teacher has not released the answers or scores yet.</p>
-          </div>
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 text-center mt-8">
+          <XMarkIcon className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+          <h3 className="text-base font-medium mb-1">Results Not Available</h3>
+          <p className="text-sm text-gray-500">
+            Answers and scores not released yet
+          </p>
         </div>
       )}
     </div>

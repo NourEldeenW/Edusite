@@ -28,43 +28,61 @@ const QUESTION_TYPES = [
 ];
 
 export default function CreateQuestions() {
-  const questions = useCreateQuizStore((state) => state.createdQuiz.questions);
-  const addQuestion = useCreateQuizStore((state) => state.addQuestion);
-  const deleteQuestion = useCreateQuizStore((state) => state.deleteQuestion);
-  const moveQuestion = useCreateQuizStore((state) => state.moveQuestion);
-  const editQuestion = useCreateQuizStore((state) => state.editQuestion);
-  const insertQuestion = useCreateQuizStore((state) => state.insertQuestion);
+  const questions = useCreateQuizStore((s) => s.createdQuiz.questions);
+  const addQuestion = useCreateQuizStore((s) => s.addQuestion);
+  const deleteQuestion = useCreateQuizStore((s) => s.deleteQuestion);
+  const moveQuestion = useCreateQuizStore((s) => s.moveQuestion);
+  const editQuestion = useCreateQuizStore((s) => s.editQuestion);
+  const insertQuestion = useCreateQuizStore((s) => s.insertQuestion);
   const deleteQuestionChoice = useCreateQuizStore(
-    (state) => state.deleteQuestionChoice
+    (s) => s.deleteQuestionChoice
   );
-  const editQuestionChoice = useCreateQuizStore(
-    (state) => state.editQuestionChoice
-  );
-  const addQuestionChoice = useCreateQuizStore(
-    (state) => state.addQuestionChoice
-  );
-  const setQuestionImage = useCreateQuizStore(
-    (state) => state.setQuestionImage
-  );
-  const deleteQuestionImage = useCreateQuizStore(
-    (state) => state.deleteQuestionImage
-  );
-  const setChoiceImage = useCreateQuizStore((state) => state.setChoiceImage);
-  const deleteChoiceImage = useCreateQuizStore(
-    (state) => state.deleteChoiceImage
-  );
+  const editQuestionChoice = useCreateQuizStore((s) => s.editQuestionChoice);
+  const addQuestionChoice = useCreateQuizStore((s) => s.addQuestionChoice);
+  const setQuestionImage = useCreateQuizStore((s) => s.setQuestionImage);
+  const deleteQuestionImage = useCreateQuizStore((s) => s.deleteQuestionImage);
+  const setChoiceImage = useCreateQuizStore((s) => s.setChoiceImage);
+  const deleteChoiceImage = useCreateQuizStore((s) => s.deleteChoiceImage);
 
-  // Collapse state management
   const [isCollapseMode, setIsCollapseMode] = useState(false);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(
     new Set()
   );
-
-  // Properly typed ref object
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  const toggleCollapseMode = () => {
+    setIsCollapseMode((prev) => !prev);
+    setExpandedQuestions(
+      isCollapseMode ? new Set(questions.map((_, i) => i)) : new Set()
+    );
+  };
+
+  const isQuestionExpanded = (i: number) =>
+    !isCollapseMode || expandedQuestions.has(i);
+
+  const toggleQuestionExpansion = (i: number) =>
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) {
+        next.delete(i);
+      } else {
+        next.add(i);
+      }
+      return next;
+    });
+
+  const collapseQuestion = (i: number) =>
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      next.delete(i);
+      return next;
+    });
+
+  const getQuestionPreview = (q: Question) =>
+    q.text.length > 50 ? q.text.slice(0, 50) + "…" : q.text || "Empty question";
+
   const handleAddQuestion = () => {
-    const newQuestionIndex = questions.length;
+    const idx = questions.length;
     addQuestion({
       question_type: "mcq",
       selection_type: "single",
@@ -72,618 +90,418 @@ export default function CreateQuestions() {
       points: 1,
       choices: [],
     });
-
-    // Auto-expand new question in collapse mode
     if (isCollapseMode) {
-      setExpandedQuestions((prev) => new Set([...prev, newQuestionIndex]));
-    }
-  };
-
-  const toggleQuestionExpansion = (questionIndex: number) => {
-    setExpandedQuestions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(questionIndex)) {
-        newSet.delete(questionIndex);
-      } else {
-        newSet.add(questionIndex);
-      }
-      return newSet;
-    });
-  };
-
-  const collapseQuestion = (questionIndex: number) => {
-    setExpandedQuestions((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(questionIndex);
-      return newSet;
-    });
-  };
-
-  const toggleCollapseMode = () => {
-    setIsCollapseMode(!isCollapseMode);
-    if (!isCollapseMode) {
-      // When entering collapse mode, collapse all questions
-      setExpandedQuestions(new Set());
-    } else {
-      // When exiting collapse mode, expand all questions
-      setExpandedQuestions(new Set(questions.map((_, index) => index)));
-    }
-  };
-
-  const isQuestionExpanded = (index: number) => {
-    return !isCollapseMode || expandedQuestions.has(index);
-  };
-
-  const getQuestionPreview = (question: Question) => {
-    if (question.text.length > 50) {
-      return question.text.substring(0, 50) + "...";
-    }
-    return question.text || "Empty question";
-  };
-
-  const handleChoiceClick = (
-    questionIndex: number,
-    choiceIndex: number,
-    currentValue: boolean
-  ) => {
-    const question = questions[questionIndex];
-
-    if (question.selection_type === "single") {
-      const newChoices = question.choices.map((choice, idx) => ({
-        ...choice,
-        is_correct: idx === choiceIndex ? !currentValue : false,
-      }));
-      editQuestion(questionIndex, { choices: newChoices });
-    } else {
-      editQuestionChoice(questionIndex, choiceIndex, {
-        is_correct: !currentValue,
-      });
+      setExpandedQuestions((p) => new Set([...p, idx]));
     }
   };
 
   const handleSelectionTypeChange = (
-    index: number,
+    qi: number,
     newType: "single" | "multiple"
   ) => {
-    const question = questions[index];
-
-    if (newType === "single" && question.selection_type === "multiple") {
-      // Reset to first correct answer only when switching to single
-      const firstCorrectIndex = question.choices.findIndex((c) => c.is_correct);
-      const newChoices = question.choices.map((choice, idx) => ({
-        ...choice,
-        is_correct: idx === firstCorrectIndex,
+    const q = questions[qi];
+    if (newType === "single" && q.selection_type === "multiple") {
+      const firstCorrect = q.choices.findIndex((c) => c.is_correct);
+      const updated = q.choices.map((c, i) => ({
+        ...c,
+        is_correct: i === firstCorrect,
       }));
-
-      editQuestion(index, {
-        selection_type: newType,
-        choices: newChoices,
-      });
+      editQuestion(qi, { selection_type: newType, choices: updated });
     } else {
-      editQuestion(index, { selection_type: newType });
+      editQuestion(qi, { selection_type: newType });
     }
   };
 
-  // Handle points input with 2 decimal places
-  const handlePointsChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    const value = e.target.value;
-    if (value === "") {
-      editQuestion(index, { points: 1 });
+  const handleChoiceClick = (qi: number, ci: number, current: boolean) => {
+    const q = questions[qi];
+    if (q.selection_type === "single") {
+      const updated = q.choices.map((c, i) => ({
+        ...c,
+        is_correct: i === ci ? !current : false,
+      }));
+      editQuestion(qi, { choices: updated });
+    } else {
+      editQuestionChoice(qi, ci, { is_correct: !current });
+    }
+  };
+
+  const handlePointsChange = (e: ChangeEvent<HTMLInputElement>, qi: number) => {
+    const v = e.target.value;
+    if (v === "") {
+      editQuestion(qi, { points: 1 });
       return;
     }
-
-    // Allow numbers with up to 2 decimal places
-    const regex = /^\d+(\.\d{0,2})?$/;
-    if (!regex.test(value)) return;
-
-    const points = parseFloat(value);
-    if (isNaN(points)) return;
-
-    editQuestion(index, { points });
+    const rx = /^\d+(\.\d{0,2})?$/;
+    if (!rx.test(v)) return;
+    const pts = parseFloat(v);
+    if (!isNaN(pts)) {
+      editQuestion(qi, { points: pts });
+    }
   };
 
-  // Handle image upload for questions
   const handleQuestionImageUpload = useCallback(
-    (e: ChangeEvent<HTMLInputElement>, questionIndex: number) => {
+    (e: ChangeEvent<HTMLInputElement>, qi: number) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          // Store as base64 string
-          setQuestionImage(questionIndex, event.target.result as string);
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setQuestionImage(qi, ev.target.result as string);
         }
       };
       reader.readAsDataURL(file);
-      e.target.value = ""; // Reset input
+      e.target.value = "";
     },
     [setQuestionImage]
   );
 
-  // Handle image upload for choices
   const handleChoiceImageUpload = useCallback(
-    (
-      e: ChangeEvent<HTMLInputElement>,
-      questionIndex: number,
-      choiceIndex: number
-    ) => {
+    (e: ChangeEvent<HTMLInputElement>, qi: number, ci: number) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setChoiceImage(
-            questionIndex,
-            choiceIndex,
-            event.target.result as string
-          );
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setChoiceImage(qi, ci, ev.target.result as string);
         }
       };
       reader.readAsDataURL(file);
-      e.target.value = ""; // Reset input
+      e.target.value = "";
     },
     [setChoiceImage]
   );
 
   return (
-    <>
-      {/* Collapse Mode Toggle */}
+    <div className="max-w-3xl mx-auto space-y-6">
       {questions.length > 0 && (
-        <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <FontAwesomeIcon
-                icon={isCollapseMode ? faEye : faEyeSlash}
-                className="text-gray-600"
-              />
-              <span className="font-medium text-gray-700">
-                {isCollapseMode ? "Collapse Mode: ON" : "Collapse Mode: OFF"}
-              </span>
-            </div>
-            <span className="text-sm text-gray-500">
-              ({questions.length} question{questions.length !== 1 ? "s" : ""})
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-indigo-50 p-3 rounded-lg border border-indigo-200 gap-3">
+          <div className="flex items-center gap-2 text-indigo-800">
+            <FontAwesomeIcon
+              icon={isCollapseMode ? faEye : faEyeSlash}
+              className="text-indigo-600"
+            />
+            <span className="font-medium">
+              {isCollapseMode ? "Collapse Mode: ON" : "Collapse Mode: OFF"}
+            </span>
+            <span className="text-sm text-indigo-600">
+              ({questions.length} question
+              {questions.length !== 1 ? "s" : ""})
             </span>
           </div>
           <Button
-            type="button"
             variant="outline"
             size="sm"
             onClick={toggleCollapseMode}
-            className="flex items-center gap-2 w-full sm:w-auto">
+            className="flex items-center gap-2 text-indigo-700 border-indigo-300 hover:bg-indigo-100">
             <FontAwesomeIcon
               icon={isCollapseMode ? faChevronDown : faChevronUp}
-              size="sm"
             />
             {isCollapseMode ? "Expand All" : "Collapse All"}
           </Button>
         </div>
       )}
 
-      {questions.length > 0 &&
-        questions.map((question, index) => (
-          <div
-            key={index}
-            className={cn(
-              "bg-white rounded-xl shadow-md border border-gray-200 relative transition-all hover:shadow-lg",
-              isQuestionExpanded(index) ? "p-4 sm:p-6 mb-6" : "p-4 mb-3"
-            )}>
-            {/* Collapsed View */}
-            {!isQuestionExpanded(index) && (
-              <div
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer"
-                onClick={() => toggleQuestionExpansion(index)}>
-                <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
-                  <div className="question-number text-lg font-semibold text-blue-600 flex-shrink-0">
-                    Q{index + 1}
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 w-full">
-                    <span className="text-gray-700 line-clamp-2 sm:truncate flex-1">
-                      {getQuestionPreview(question)}
-                    </span>
-                    <div className="flex flex-wrap gap-2 mt-1 sm:mt-0">
-                      <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
-                        {question.selection_type === "single"
-                          ? "Single"
-                          : "Multiple"}
-                      </span>
-                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
-                        {question.points} pts
-                      </span>
-                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
-                        {question.choices.length} options
-                      </span>
-                    </div>
-                  </div>
+      {questions.map((question, qi) => (
+        <div
+          key={qi}
+          className={cn(
+            "bg-white rounded-xl shadow-sm border border-indigo-100 mx-auto transition-all hover:shadow-md overflow-hidden",
+            isQuestionExpanded(qi) ? "p-5" : "p-3"
+          )}>
+          {!isQuestionExpanded(qi) && (
+            <div
+              className="flex items-center justify-between cursor-pointer group"
+              onClick={() => toggleQuestionExpansion(qi)}>
+              <div className="flex items-center gap-2">
+                <div className="text-lg font-semibold text-indigo-600 bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center">
+                  {qi + 1}
                 </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto">
-                  <FontAwesomeIcon
-                    icon={faChevronDown}
-                    className="text-gray-400"
-                  />
+                <div className="text-gray-700 line-clamp-1 group-hover:text-indigo-800">
+                  {getQuestionPreview(question)}
                 </div>
               </div>
-            )}
+              <FontAwesomeIcon
+                icon={faChevronDown}
+                className="text-gray-400 group-hover:text-indigo-600"
+              />
+            </div>
+          )}
 
-            {/* Expanded View */}
-            {isQuestionExpanded(index) && (
-              <>
-                {/* Insert Question Above Button */}
-                <div className="flex justify-center mb-4">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="flex items-center gap-2 text-sm px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg"
-                    onClick={() =>
-                      insertQuestion(
-                        {
-                          question_type: "mcq",
-                          selection_type: "single",
-                          text: "",
-                          points: 1,
-                          choices: [],
-                        },
-                        index,
-                        "above"
-                      )
-                    }>
-                    <FontAwesomeIcon icon={faPlusCircle} size="xs" />
-                    Insert Above
-                  </Button>
-                </div>
-
-                <div className="question-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-                  <div className="question-number text-xl font-semibold text-blue-600">
-                    Question {index + 1}
+          {isQuestionExpanded(qi) && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-xl font-bold text-white bg-indigo-600 rounded-full w-8 h-8 flex items-center justify-center">
+                    {qi + 1}
                   </div>
-                  <div className="question-actions flex flex-wrap gap-2">
-                    {/* Collapse button (only visible in collapse mode) */}
-                    {isCollapseMode && (
-                      <button
-                        type="button"
-                        className="question-action-btn w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                        onClick={() => collapseQuestion(index)}
-                        title="Collapse question">
-                        <FontAwesomeIcon
-                          icon={faChevronUp}
-                          className="text-sm"
-                        />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className={cn(
-                        "question-action-btn w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                        index === 0
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                      )}
-                      onClick={() => moveQuestion(index, "up")}
-                      disabled={index === 0}>
-                      <FontAwesomeIcon icon={faArrowUp} className="text-sm" />
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(
-                        "question-action-btn w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                        index === questions.length - 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                      )}
-                      onClick={() => moveQuestion(index, "down")}
-                      disabled={index === questions.length - 1}>
-                      <FontAwesomeIcon icon={faArrowDown} className="text-sm" />
-                    </button>
-                    <button
-                      type="button"
-                      className="question-action-btn w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 transition-colors"
-                      onClick={() => deleteQuestion(index)}>
-                      <FontAwesomeIcon icon={faTrash} className="text-sm" />
-                    </button>
+                  <div className="text-xl font-bold text-indigo-800">
+                    Question {qi + 1}
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  {isCollapseMode && (
+                    <button
+                      onClick={() => collapseQuestion(qi)}
+                      className="p-2 bg-indigo-50 rounded-full hover:bg-indigo-100 text-indigo-600"
+                      title="Collapse">
+                      <FontAwesomeIcon icon={faChevronUp} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => moveQuestion(qi, "up")}
+                    disabled={qi === 0}
+                    className={cn(
+                      "p-2 rounded-full",
+                      qi === 0
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-600"
+                    )}>
+                    <FontAwesomeIcon icon={faArrowUp} />
+                  </button>
+                  <button
+                    onClick={() => moveQuestion(qi, "down")}
+                    disabled={qi === questions.length - 1}
+                    className={cn(
+                      "p-2 rounded-full",
+                      qi === questions.length - 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-600"
+                    )}>
+                    <FontAwesomeIcon icon={faArrowDown} />
+                  </button>
+                  <button
+                    onClick={() => deleteQuestion(qi)}
+                    className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-full">
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                </div>
+              </div>
 
-                <div className="form-group mb-6">
-                  <label className="block mb-2 font-medium text-gray-700">
+              {/* Question Text & Image Side by Side */}
+              <div className="mb-5 flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-3/4">
+                  <label className="block mb-1 text-gray-700 font-medium">
                     Question Text
                   </label>
                   <Textarea
-                    className="form-control w-full px-4 py-3 border border-gray-300 rounded-lg bg-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-full resize-y overflow-y-auto"
-                    placeholder="Enter your question"
-                    style={{
-                      minHeight: 81,
-                      wordBreak: "break-word",
-                      overflowWrap: "break-word",
-                    }}
                     value={question.text}
-                    onChange={(e) =>
-                      editQuestion(index, { text: e.target.value })
-                    }
+                    onChange={(e) => editQuestion(qi, { text: e.target.value })}
+                    placeholder="Type your question..."
+                    className="w-full min-h-[100px] border-gray-300 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
-
-                {/* Question Image Section */}
-                <div className="form-group mb-6">
-                  <label className="block mb-2 font-medium text-gray-700">
-                    Question Image (Optional)
+                <div className="w-full md:w-1/4">
+                  <label className="block mb-1 text-gray-700 font-medium">
+                    Image
                   </label>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center justify-center">
                     {question.image ? (
-                      <div className="relative">
+                      <div className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-indigo-100">
                         <Image
                           src={question.image}
                           alt="Question"
-                          width={200}
-                          height={150}
-                          className="max-w-[200px] max-h-[150px] rounded-lg object-contain border border-gray-200"
+                          fill
+                          className="object-cover"
                         />
                         <button
-                          type="button"
-                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center transform translate-x-1/2 -translate-y-1/2"
-                          onClick={() => deleteQuestionImage(index)}>
+                          onClick={() => deleteQuestionImage(qi)}
+                          className="absolute top-1 right-1 bg-white text-red-600 w-6 h-6 rounded-full flex items-center justify-center shadow-sm hover:shadow transition-shadow">
                           <FontAwesomeIcon icon={faTimes} size="xs" />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3">
+                      <>
                         <input
                           type="file"
                           accept="image/*"
+                          id={`q-img-${qi}`}
                           className="hidden"
-                          id={`question-image-${index}`}
-                          onChange={(e) => handleQuestionImageUpload(e, index)}
+                          onChange={(e) => handleQuestionImageUpload(e, qi)}
                           ref={(el) => {
-                            fileInputRefs.current[`question-${index}`] = el;
+                            fileInputRefs.current[`q-${qi}`] = el;
                           }}
                         />
                         <label
-                          htmlFor={`question-image-${index}`}
-                          className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
-                          <FontAwesomeIcon icon={faImage} />
-                          Upload Image
+                          htmlFor={`q-img-${qi}`}
+                          className="flex flex-col items-center justify-center gap-1 text-indigo-600 hover:text-indigo-800 cursor-pointer text-sm w-full h-32 border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                          <FontAwesomeIcon icon={faImage} size="lg" />
+                          <span>Upload Image</span>
                         </label>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div className="form-group mb-6">
-                  <label className="block mb-2 font-medium text-gray-700">
-                    Choices Type
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5">
+                <div className="md:col-span-5">
+                  <label className="block mb-1 text-gray-700 font-medium">
+                    Type
                   </label>
-                  <div className="question-type-select grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {QUESTION_TYPES.map((type) => (
+                  <div className="flex  gap-2">
+                    {QUESTION_TYPES.map((t) => (
                       <div
-                        key={type.value}
-                        className={cn(
-                          "p-4 border rounded-lg text-center cursor-pointer transition-all flex items-center justify-center",
-                          question.selection_type === type.value
-                            ? "bg-blue-50 border-blue-500 text-blue-700 font-medium shadow-inner"
-                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                        )}
-                        data-type={type.value}
+                        key={t.value}
                         onClick={() =>
                           handleSelectionTypeChange(
-                            index,
-                            type.value as "single" | "multiple"
+                            qi,
+                            t.value as "single" | "multiple"
                           )
-                        }>
-                        {type.label}
+                        }
+                        className={cn(
+                          "px-4 py-2 border rounded-lg cursor-pointer transition-colors font-medium w-full",
+                          question.selection_type === t.value
+                            ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        )}>
+                        {t.label}
                       </div>
                     ))}
                   </div>
                 </div>
-
-                <div className="form-group mb-6">
-                  <label className="block mb-2 font-medium text-gray-700">
+                <div className="md:col-span-1">
+                  <label className="block mb-1 text-gray-700 font-medium">
                     Points
                   </label>
                   <Input
                     type="number"
                     step="0.01"
                     min="0.5"
-                    className="form-control w-full px-4 py-3 border border-gray-300 rounded-lg bg-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={question.points}
-                    onChange={(e) => handlePointsChange(e, index)}
+                    onChange={(e) => handlePointsChange(e, qi)}
+                    className="w-full border-gray-300 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
+              </div>
 
-                {question.question_type && (
-                  <div className="form-group">
-                    <label className="block mb-2 font-medium text-gray-700">
-                      Options
-                    </label>
-                    <div className="options-container mb-4">
-                      {question.choices.map(
-                        (
-                          option: {
-                            text: string;
-                            is_correct: boolean;
-                            image?: string | null;
-                          },
-                          optIdx: number
-                        ) => (
-                          <div
-                            key={optIdx}
-                            className="option-item flex flex-col gap-3 p-3 mb-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
-                              <div className="flex items-start gap-3 w-full">
-                                <div
-                                  className={cn(
-                                    "option-checkbox w-6 h-6 border-2 rounded-full flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer",
-                                    option.is_correct
-                                      ? question.selection_type === "single"
-                                        ? "bg-blue-600 border-blue-600"
-                                        : "bg-green-500 border-green-500"
-                                      : "bg-white border-gray-400"
-                                  )}
-                                  onClick={() =>
-                                    handleChoiceClick(
-                                      index,
-                                      optIdx,
-                                      option.is_correct
-                                    )
-                                  }>
-                                  <span
-                                    className={cn(
-                                      "text-white text-xs font-bold",
-                                      option.is_correct ? "" : "hidden"
-                                    )}>
-                                    {question.selection_type === "single"
-                                      ? "●"
-                                      : "✓"}
-                                  </span>
-                                </div>
-                                <div className="flex-1 w-full">
-                                  <Textarea
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                                    placeholder="Option text"
-                                    style={{
-                                      wordBreak: "break-word",
-                                      overflowWrap: "break-word",
-                                    }}
-                                    value={option.text}
-                                    onChange={(e) =>
-                                      editQuestionChoice(index, optIdx, {
-                                        text: e.target.value,
-                                      })
-                                    }
-                                  />
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                className="delete-option-btn w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 transition-colors flex-shrink-0 self-end sm:self-auto"
-                                onClick={() => {
-                                  deleteQuestionChoice(index, optIdx);
-                                }}>
-                                <FontAwesomeIcon
-                                  icon={faTrash}
-                                  className="text-sm"
-                                />
-                              </button>
-                            </div>
-
-                            {/* Choice Image Section */}
-                            <div className="sm:ml-9">
-                              <label className="block mb-2 font-medium text-gray-700 text-sm">
-                                Option Image (Optional)
-                              </label>
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                {option.image ? (
-                                  <div className="relative">
-                                    <Image
-                                      src={option.image}
-                                      alt="Option"
-                                      width={150}
-                                      height={100}
-                                      className="max-w-[150px] max-h-[100px] rounded-lg object-contain border border-gray-200"
-                                    />
-                                    <button
-                                      type="button"
-                                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center transform translate-x-1/2 -translate-y-1/2"
-                                      onClick={() =>
-                                        deleteChoiceImage(index, optIdx)
-                                      }>
-                                      <FontAwesomeIcon
-                                        icon={faTimes}
-                                        size="xs"
-                                      />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-3">
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      id={`choice-image-${index}-${optIdx}`}
-                                      onChange={(e) =>
-                                        handleChoiceImageUpload(
-                                          e,
-                                          index,
-                                          optIdx
-                                        )
-                                      }
-                                      ref={(el) => {
-                                        fileInputRefs.current[
-                                          `choice-${index}-${optIdx}`
-                                        ] = el;
-                                      }}
-                                    />
-                                    <label
-                                      htmlFor={`choice-image-${index}-${optIdx}`}
-                                      className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium py-1.5 px-3 rounded-lg flex items-center gap-2">
-                                      <FontAwesomeIcon
-                                        icon={faImage}
-                                        size="xs"
-                                      />
-                                      Upload Image
-                                    </label>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className="add-option-btn flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium cursor-pointer px-4 py-2.5 rounded-lg transition-colors"
-                      onClick={() =>
-                        addQuestionChoice(index, {
-                          text: "",
-                          is_correct: false,
-                        })
-                      }>
-                      <FontAwesomeIcon icon={faPlus} /> Add Option
-                    </button>
-                  </div>
-                )}
-
-                {/* Insert Question Below Button */}
-                <div className="flex justify-center mt-5">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="flex items-center gap-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200"
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-gray-700 font-medium">Options</label>
+                  <button
                     onClick={() =>
-                      insertQuestion(
-                        {
-                          question_type: "mcq",
-                          selection_type: "single",
-                          text: "",
-                          points: 1,
-                          choices: [],
-                        },
-                        index,
-                        "under"
-                      )
-                    }>
-                    <FontAwesomeIcon icon={faPlusCircle} size="xs" />
-                    Insert Below
-                  </Button>
+                      addQuestionChoice(qi, { text: "", is_correct: false })
+                    }
+                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    <FontAwesomeIcon icon={faPlus} size="sm" />
+                    Add Option
+                  </button>
                 </div>
-              </>
-            )}
-          </div>
-        ))}
+                <div className="space-y-3">
+                  {question.choices.map((opt, ci) => (
+                    <div
+                      key={ci}
+                      className="flex items-center border border-gray-200 rounded-lg px-3 py-2 hover:border-indigo-300 transition-colors bg-white">
+                      <div
+                        onClick={() =>
+                          handleChoiceClick(qi, ci, opt.is_correct)
+                        }
+                        className={cn(
+                          "flex-shrink-0 w-6 h-6 border-2 rounded-full flex items-center justify-center cursor-pointer transition-colors",
+                          opt.is_correct
+                            ? question.selection_type === "single"
+                              ? "bg-indigo-600 border-indigo-600"
+                              : "bg-emerald-500 border-emerald-500"
+                            : "bg-white border-gray-400 hover:border-indigo-400"
+                        )}>
+                        {opt.is_correct && (
+                          <FontAwesomeIcon
+                            icon={
+                              question.selection_type === "single"
+                                ? faPlusCircle
+                                : faPlus
+                            }
+                            className="text-white text-xs"
+                          />
+                        )}
+                      </div>
 
-      {/* Centered Add Question Button */}
-      <div className="flex justify-center mt-4">
+                      <Input
+                        value={opt.text}
+                        onChange={(e) =>
+                          editQuestionChoice(qi, ci, { text: e.target.value })
+                        }
+                        placeholder="Option text"
+                        className="ml-3 flex-1 border-0 focus:ring-0 text-sm py-0"
+                      />
+
+                      {opt.image ? (
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden ml-2 border border-indigo-100">
+                          <Image
+                            src={opt.image}
+                            alt="Option"
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            onClick={() => deleteChoiceImage(qi, ci)}
+                            className="absolute top-0 right-0 bg-white text-red-600 w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                            <FontAwesomeIcon icon={faTimes} size="xs" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            id={`opt-img-${qi}-${ci}`}
+                            className="hidden"
+                            onChange={(e) => handleChoiceImageUpload(e, qi, ci)}
+                            ref={(el) => {
+                              fileInputRefs.current[`opt-${qi}-${ci}`] = el;
+                            }}
+                          />
+                          <label
+                            htmlFor={`opt-img-${qi}-${ci}`}
+                            className="ml-2 text-indigo-600 hover:text-indigo-800 cursor-pointer text-sm p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100">
+                            <FontAwesomeIcon icon={faImage} size="sm" />
+                          </label>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => deleteQuestionChoice(qi, ci)}
+                        className="ml-2 text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50">
+                        <FontAwesomeIcon icon={faTrash} size="sm" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    insertQuestion(
+                      {
+                        question_type: "mcq",
+                        selection_type: "single",
+                        text: "",
+                        points: 1,
+                        choices: [],
+                      },
+                      qi,
+                      "under"
+                    )
+                  }
+                  className="gap-2 text-indigo-700 hover:bg-indigo-50 border border-indigo-200">
+                  <FontAwesomeIcon icon={faPlusCircle} />
+                  Insert Below
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+
+      <div className="flex justify-center mt-6">
         <Button
-          type="button"
           onClick={handleAddQuestion}
-          className="px-5 py-3 text-base bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md">
-          <FontAwesomeIcon icon={faPlus} className="mr-2" />
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-5 px-6 rounded-xl shadow-sm transition-all">
+          <FontAwesomeIcon icon={faPlus} />
           Add Question
         </Button>
       </div>
-    </>
+    </div>
   );
 }

@@ -231,6 +231,26 @@ export default function CreateQuestions() {
 
           {isQuestionExpanded(qi) && (
             <>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() =>
+                    insertQuestion(
+                      {
+                        question_type: "mcq",
+                        selection_type: "single",
+                        text: "",
+                        points: 1,
+                        choices: [],
+                      },
+                      qi,
+                      "above"
+                    )
+                  }
+                  className="gap-2 bg-primary hover:bg-primary-hover border border-border-default text-text-inverse">
+                  <FontAwesomeIcon icon={faPlusCircle} />
+                  Insert Above
+                </Button>
+              </div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-3">
                   <div className="text-xl font-bold text-white bg-indigo-600 rounded-full w-8 h-8 flex items-center justify-center">
@@ -468,28 +488,6 @@ export default function CreateQuestions() {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="flex justify-center">
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    insertQuestion(
-                      {
-                        question_type: "mcq",
-                        selection_type: "single",
-                        text: "",
-                        points: 1,
-                        choices: [],
-                      },
-                      qi,
-                      "under"
-                    )
-                  }
-                  className="gap-2 text-indigo-700 hover:bg-indigo-50 border border-indigo-200">
-                  <FontAwesomeIcon icon={faPlusCircle} />
-                  Insert Below
-                </Button>
               </div>
             </>
           )}

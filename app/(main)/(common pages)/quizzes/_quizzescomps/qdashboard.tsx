@@ -15,6 +15,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useViewStore from "@/lib/stores/onlineQuizStores/viewStore";
 import useQEditStore from "@/lib/stores/onlineQuizStores/editQuiz";
 import useSubmissionsStore from "@/lib/stores/onlineQuizStores/submissions";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { api } from "@/lib/axiosinterceptor";
+import { showToast } from "../../students/_students comps/main";
 
 // Date formatting helper
 const formatDate = (dateString: string): string => {
@@ -56,8 +68,13 @@ export default function QDashboard({
   const [isFilterGradesOpen, setIsFilterGradesOpen] = useState(false);
   const [selectedCenter, setSelectedCenter] = useState<string | number>("all");
   const [selectedGrade, setSelectedGrade] = useState<string | number>("all");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleting, setIsDeleting] = useState(false);
+  const [deleteQuiz, setDeleteQuiz] = useState<number | null>(null);
 
   const { allQuizzes, availGrades } = useQuizStore_initial();
+
+  const deleteQuizFromUI = useQuizStore_initial.getState().deleteQuiz;
 
   const { updateCurrentMainView } = useViewStore();
 
@@ -100,6 +117,24 @@ export default function QDashboard({
       return matchesSearch && matchesCenter && matchesGrade;
     });
   }, [allQuizzes, searchQuery, selectedCenter, selectedGrade]);
+
+  const onConfirm = async () => {
+    if (!deleteQuiz) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}onlinequiz/quizzes/${deleteQuiz}/delete/`
+      );
+      deleteQuizFromUI(deleteQuiz);
+      setDeleteQuiz(null);
+      setIsDeleteDialogOpen(false);
+      showToast("Quiz deleted successfully", "success");
+    } catch {
+      showToast("couldn't delete quiz", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Skeleton Loaders
   if (isLoading) {
@@ -286,9 +321,19 @@ export default function QDashboard({
                 key={quiz.id}
                 className="bg-bg-secondary rounded-xl overflow-hidden shadow-sm border border-border-default transition-all duration-300 flex flex-col hover:-translate-y-1 hover:shadow-lg">
                 <div className="quiz-header p-5 pb-4 border-b border-border-default flex-1">
-                  <h2 className="quiz-title text-xl font-semibold mb-2">
-                    {quiz.title}
-                  </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="quiz-title text-xl font-semibold">
+                      {quiz.title}
+                    </h2>
+                    <Button
+                      onClick={() => {
+                        setIsDeleteDialogOpen(true);
+                        setDeleteQuiz(quiz.id);
+                      }}
+                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-full">
+                      <FontAwesomeIcon icon={faTrash} />
+                    </Button>
+                  </div>
                   <div className="quiz-meta flex flex-wrap gap-2 mb-3">
                     {quiz.grade && (
                       <span className="quiz-tag grade-tag inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -409,6 +454,35 @@ export default function QDashboard({
           </Button>
         </div>
       )}
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Are you sure you want to delete this quiz?
+            </DialogTitle>
+            <DialogDescription>
+              All submissions and data about this quiz will be permanently
+              deleted. This action cannot be undone!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={deleting}
+              className="hover:bg-bg-secondary">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirm}
+              disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import useQEditStore from "@/lib/stores/onlineQuizStores/editQuiz";
-import { Question } from "@/lib/stores/onlineQuizStores/createQuiz";
+import useQEditStore, {
+  question,
+} from "@/lib/stores/onlineQuizStores/editQuiz";
 import { cn } from "@/lib/utils";
 import {
   faArrowDown,
@@ -29,8 +30,10 @@ const QUESTION_TYPES = [
 ];
 
 export default function EditQuestions() {
-  // store selectors
-  const questions = useQEditStore((s) => s.quizDetails?.questions ?? []);
+  const quizDetails = useQEditStore((s) => s.quizDetails);
+  const questions = quizDetails?.questions || [];
+
+  // Store actions
   const addQuestion = useQEditStore((s) => s.addQuestion);
   const deleteQuestion = useQEditStore((s) => s.deleteQuestion);
   const moveQuestion = useQEditStore((s) => s.moveQuestion);
@@ -44,24 +47,21 @@ export default function EditQuestions() {
   const setChoiceImage = useQEditStore((s) => s.setChoiceImage);
   const deleteChoiceImage = useQEditStore((s) => s.deleteOptionImage);
 
+  // State
   const [isCollapseMode, setIsCollapseMode] = useState(false);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(
     new Set()
   );
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // toggle collapse/expand all
+  // Handlers
   const toggleCollapseMode = () => {
     setIsCollapseMode((prev) => !prev);
     setExpandedQuestions(
-      () =>
-        isCollapseMode
-          ? new Set() // if already collapsed, clear expansions
-          : new Set(questions.map((_, i) => i)) // else expand all
+      isCollapseMode ? new Set(questions.map((_, i) => i)) : new Set()
     );
   };
 
-  // per‐question expand/collapse
   const isQuestionExpanded = (i: number) =>
     !isCollapseMode || expandedQuestions.has(i);
 
@@ -83,18 +83,14 @@ export default function EditQuestions() {
       return next;
     });
 
-  const getQuestionPreview = (q: Question) =>
+  const getQuestionPreview = (q: question) =>
     q.text.length > 50 ? q.text.slice(0, 50) + "…" : q.text || "Empty question";
 
   const handleAddQuestion = () => {
     const idx = questions.length;
     addQuestion();
     if (isCollapseMode) {
-      setExpandedQuestions((prev) => {
-        const next = new Set(prev);
-        next.add(idx);
-        return next;
-      });
+      setExpandedQuestions((p) => new Set([...p, idx]));
     }
   };
 
@@ -142,7 +138,6 @@ export default function EditQuestions() {
     }
   };
 
-  // image uploads
   const handleQuestionImageUpload = useCallback(
     (e: ChangeEvent<HTMLInputElement>, qi: number) => {
       const file = e.target.files?.[0];
@@ -209,7 +204,7 @@ export default function EditQuestions() {
         <div
           key={qi}
           className={cn(
-            "bg-white rounded-xl shadow-sm border border-indigo-100 mx-auto overflow-hidden transition-all hover:shadow-md",
+            "bg-white rounded-xl shadow-sm border border-indigo-100 mx-auto transition-all hover:shadow-md overflow-hidden",
             isQuestionExpanded(qi) ? "p-5" : "p-3"
           )}>
           {!isQuestionExpanded(qi) && (
@@ -233,6 +228,14 @@ export default function EditQuestions() {
 
           {isQuestionExpanded(qi) && (
             <>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => insertQuestion(qi, "above")}
+                  className="gap-2 bg-primary hover:bg-primary-hover border border-border-default text-text-inverse">
+                  <FontAwesomeIcon icon={faPlusCircle} />
+                  Insert Above
+                </Button>
+              </div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-3">
                   <div className="text-xl font-bold text-white bg-indigo-600 rounded-full w-8 h-8 flex items-center justify-center">
@@ -281,7 +284,7 @@ export default function EditQuestions() {
                 </div>
               </div>
 
-              {/* Question Text & Image Side by Side */}
+              {/* Question Text & Image */}
               <div className="mb-5 flex flex-col md:flex-row gap-4">
                 <div className="w-full md:w-3/4">
                   <label className="block mb-1 text-gray-700 font-medium">
@@ -308,9 +311,7 @@ export default function EditQuestions() {
                           className="object-cover"
                         />
                         <button
-                          onClick={() =>
-                            deleteQuestionImage(question.id || null, qi)
-                          }
+                          onClick={() => deleteQuestionImage(question.id, qi)}
                           className="absolute top-1 right-1 bg-white text-red-600 w-6 h-6 rounded-full flex items-center justify-center shadow-sm hover:shadow transition-shadow">
                           <FontAwesomeIcon icon={faTimes} size="xs" />
                         </button>
@@ -339,7 +340,6 @@ export default function EditQuestions() {
                 </div>
               </div>
 
-              {/* Type & Points */}
               <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5">
                 <div className="md:col-span-5">
                   <label className="block mb-1 text-gray-700 font-medium">
@@ -381,7 +381,6 @@ export default function EditQuestions() {
                 </div>
               </div>
 
-              {/* Options */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-gray-700 font-medium">Options</label>
@@ -440,12 +439,7 @@ export default function EditQuestions() {
                           />
                           <button
                             onClick={() =>
-                              deleteChoiceImage(
-                                question.id || null,
-                                opt.id || null,
-                                qi,
-                                ci
-                              )
+                              deleteChoiceImage(question.id, opt.id, qi, ci)
                             }
                             className="absolute top-0 right-0 bg-white text-red-600 w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
                             <FontAwesomeIcon icon={faTimes} size="xs" />
@@ -480,23 +474,11 @@ export default function EditQuestions() {
                   ))}
                 </div>
               </div>
-
-              {/* Insert Below */}
-              <div className="flex justify-center">
-                <Button
-                  variant="secondary"
-                  onClick={() => insertQuestion(qi, "under")}
-                  className="gap-2 text-indigo-700 hover:bg-indigo-50 border border-indigo-200">
-                  <FontAwesomeIcon icon={faPlusCircle} />
-                  Insert Below
-                </Button>
-              </div>
             </>
           )}
         </div>
       ))}
 
-      {/* Add Question */}
       <div className="flex justify-center mt-6">
         <Button
           onClick={handleAddQuestion}

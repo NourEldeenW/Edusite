@@ -71,7 +71,6 @@ export default function SubmissionsTable() {
   const access = useQuizStore_initial((state) => state.access);
   const availableCenters = useQuizStore_initial((state) => state.availCenters);
   const submissions = useSubmissionsStore((state) => state.submissions);
-  const settings = useSubmissionsStore((state) => state.settings);
 
   const statusOptions = useMemo(
     () => [
@@ -303,18 +302,12 @@ export default function SubmissionsTable() {
                 Time taken
               </TableHead>
               <TableHead className="min-w-[60px] text-left">Score</TableHead>
-              {settings?.score_visibility === "manual" && (
-                <TableHead className="min-w-[60px] text-left">
-                  Score Released
-                </TableHead>
-              )}
-
-              {settings?.answers_visibility === "manual" && (
-                <TableHead className="min-w-[60px] text-left">
-                  Answers Released
-                </TableHead>
-              )}
-
+              <TableHead className="min-w-[60px] text-left">
+                Score Released
+              </TableHead>
+              <TableHead className="min-w-[60px] text-left">
+                Answers Released
+              </TableHead>
               <TableHead className="min-w-[50px] text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>

@@ -5,6 +5,7 @@ import {
   faArrowLeft,
   faArrowRight,
   faCheck,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
@@ -22,6 +23,7 @@ export default function CreateQuiz() {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
   const { updateCurrentMainView } = useViewStore();
+  const [isCreating, setIsCreating] = useState(false);
 
   // Don't subscribe to any quiz data - we'll access it directly via getState()
   const getQuizData = () => useCreateQuizStore.getState().createdQuiz;
@@ -91,13 +93,10 @@ export default function CreateQuiz() {
           }
 
           const isEmpty = question.choices.some(
-            (choice) => !choice.text.trim() && !choice.image
+            (choice) => !choice.text.trim()
           );
           if (isEmpty) {
-            showToast(
-              `Question ${index + 1} option text or image is required`,
-              "error"
-            );
+            showToast(`Question ${index + 1} option text is required`, "error");
             return false;
           }
         }
@@ -119,6 +118,7 @@ export default function CreateQuiz() {
   };
 
   const createQuiz = async () => {
+    setIsCreating(true);
     const quiz = useCreateQuizStore.getState().createdQuiz;
 
     // Validate quiz data before submission
@@ -374,6 +374,8 @@ export default function CreateQuiz() {
       updateCurrentMainView("dashboard");
     } catch {
       showToast("error while creating quiz", "error");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -466,7 +468,9 @@ export default function CreateQuiz() {
             <Button
               variant="ghost"
               className="px-5 py-3 text-base font-medium text-text-primary bg-bg-secondary hover:bg-bg-secondary"
-              onClick={handleBack}>
+              onClick={handleBack}
+              disabled={isCreating} // Disable during creation
+            >
               <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -477,7 +481,9 @@ export default function CreateQuiz() {
           {currentStep < totalSteps ? (
             <Button
               className="px-6 py-3 text-base font-medium"
-              onClick={handleNext}>
+              onClick={handleNext}
+              disabled={isCreating} // Disable during creation
+            >
               Next:
               {currentStep === 1
                 ? "Settings"
@@ -488,10 +494,26 @@ export default function CreateQuiz() {
             </Button>
           ) : (
             <Button
-              className="bg-success hover:bg-success/90 px-6 py-3 text-base font-medium"
-              onClick={createQuiz}>
-              <FontAwesomeIcon icon={faCheck} className="h-4 w-4 mr-2" />
-              Create Quiz
+              className="bg-success hover:bg-success/90 px-6 py-3 text-base font-medium relative"
+              onClick={createQuiz}
+              disabled={isCreating} // Disable when loading
+            >
+              <div className="flex items-center justify-center">
+                {isCreating ? (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="h-4 w-4 mr-2 animate-spin"
+                    />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faCheck} className="h-4 w-4 mr-2" />
+                    Create Quiz
+                  </>
+                )}
+              </div>
             </Button>
           )}
         </div>

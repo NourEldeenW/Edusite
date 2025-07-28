@@ -17,6 +17,8 @@ import {
   faChevronUp,
   faEye,
   faEyeSlash,
+  faCheck,
+  faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
@@ -407,8 +409,8 @@ export default function CreateQuestions() {
                           <FontAwesomeIcon
                             icon={
                               question.selection_type === "single"
-                                ? faPlusCircle
-                                : faPlus
+                                ? faCheck
+                                : faCheckCircle
                             }
                             className="text-white text-xs"
                           />

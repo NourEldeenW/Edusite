@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import Main from "./_quizzescomps/main";
 
 export const metadata: Metadata = {
-  title: "EduSite | Quizzes",
+  title: "EduTrack | Quizzes",
   description:
     "This page is for teachers and assistants to manage and creare Quizzes.",
 };

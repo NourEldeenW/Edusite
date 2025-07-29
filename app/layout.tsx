@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EduSite",
+  title: "EduTrack",
   description:
-    "EduSite, a Learning Management System for Teachers (Created & Designed by WebSet)",
+    "EduTrack, a Learning Management System for Teachers (Created & Designed by WebSet)",
 };
 
 export default function RootLayout({

@@ -4,7 +4,7 @@ import Mainpage from "./_studentscomp/mainpage";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "EduSite | Student Management",
+  title: "EduTrack | Student Management",
   description: "Manage all student accounts and their academic information",
 };
 

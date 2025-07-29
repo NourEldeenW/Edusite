@@ -183,7 +183,33 @@ const links = {
       ),
     },
   ],
-  student: [],
+  student: [
+    {
+      href: "/student/dashboard",
+      key: "dashboard",
+      name: "Dashboard",
+      icon: (
+        <LayoutDashboard
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+          strokeWidth={2}
+          fill="#ffff"
+        />
+      ),
+    },
+    {
+      href: "/student/studymaterials",
+      key: "studymaterials",
+      name: "Study Materials",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBook}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+  ],
 };
 
 export default async function RootLayout({

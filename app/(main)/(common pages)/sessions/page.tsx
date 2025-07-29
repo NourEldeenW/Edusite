@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import Main from "./main";
 
 export const metadata: Metadata = {
-  title: "EduSite | Sessions",
+  title: "EduTrack | Sessions",
   description:
     "This page is for teachers and assistants to manage and creare sessions.",
 };

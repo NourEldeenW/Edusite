@@ -2,8 +2,8 @@ import LgnForm from "@/app/(auth)/login/_form/form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "EduSite | Login",
-  description: "Login page for EduSite",
+  title: "EduTrack | Login",
+  description: "Login page for EduTrack",
 };
 
 export default function Home() {

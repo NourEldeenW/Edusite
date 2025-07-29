@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import StudentManagementPage from "./_students comps/main";
 
 export const metadata: Metadata = {
-  title: "EduSite | Students",
+  title: "EduTrack | Students",
   description:
     "The Students' Page to Manage and Controle all Students' Accounts and Data.",
 };

@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import Main from "./_studymatcomp/main";
 
 export const metadata: Metadata = {
-  title: "EduSite | Study Materials",
+  title: "EduTrack | Study Materials",
   description:
     "This page is for teachers and assistants to upload and manage study materials for their students.",
 };

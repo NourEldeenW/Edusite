@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import Main from "./_assisstantscomps/main";
 
 export const metadata: Metadata = {
-  title: "EduSite | Assistants",
+  title: "EduTrack | Assistants",
   description:
     "The Assistants' Page to Manage and Controle all Assistants' Accounts and Data.",
 };

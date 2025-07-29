@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import Mainpage from "./_dashcomp/mainpage";
 
 export const metadata: Metadata = {
-  title: "EduSite | Admin Dashboard",
+  title: "EduTrack | Admin Dashboard",
   description:
     "The Admin Dashboard to Manage and Controle all Students' and Teachers' Accounts",
 };

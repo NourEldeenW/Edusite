@@ -63,8 +63,8 @@ interface apiDataType {
 }
 
 export const metadata: Metadata = {
-  title: "EduSite | Quiz Review",
-  description: "Review your quiz performance and answers on EduSite.",
+  title: "EduTrack | Quiz Review",
+  description: "Review your quiz performance and answers on EduTrack.",
 };
 
 const djangoAPI = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
@@ -82,6 +82,7 @@ async function fetchSubmissionData(
         "Content-Type": "application/json",
       },
       next: { revalidate: 0 },
+      cache: "no-store",
     }
   );
 

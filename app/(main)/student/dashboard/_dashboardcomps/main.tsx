@@ -377,7 +377,7 @@ export default function StudentDashboard({ access }: { access: string }) {
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Right Column - Moved to top on mobile */}
-        <div className="space-y-6 order-1 lg:order-2">
+        <div className="space-y-6 order-1">
           {/* Profile Card */}
           <Card className="border border-gray-200 shadow-sm">
             <CardHeader className="border-b">
@@ -388,15 +388,13 @@ export default function StudentDashboard({ access }: { access: string }) {
             </CardHeader>
             <CardContent className="p-5">
               <div className="flex flex-col items-center text-center">
-                <div className="relative mb-4">
-                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <User className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <Badge className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-indigo-600 hover:bg-indigo-700">
-                    {profile.student_id}
-                  </Badge>
-                </div>
-                <h3 className="font-bold text-lg">{profile.full_name}</h3>
+                <QRCode
+                  value={profile.student_id}
+                  size={200}
+                  bgColor="transparent"
+                  fgColor="#1f2937"
+                />
+                <h3 className="font-bold text-lg mt-4">{profile.full_name}</h3>
                 <p className="text-gray-600 mt-1">@{profile.username}</p>
               </div>
 
@@ -502,7 +500,7 @@ export default function StudentDashboard({ access }: { access: string }) {
         </div>
 
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+        <div className="lg:col-span-2 space-y-6 order-2">
           {/* Session Scores */}
           <Card className="border border-gray-200 shadow-sm">
             <CardHeader className="border-b">

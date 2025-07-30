@@ -1,10 +1,23 @@
+// app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import verify from "@/app/(main)/global functions/verify";
+import { CompactEncrypt } from "jose";
 
-const BASE_URL = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
+const DJANGO_BASE = process.env.NEXT_PUBLIC_DJANGO_BASE_URL!;
+
+/**
+ * Same SHA-256 → 32-byte key derivation
+ */
+async function getSecret(): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(process.env.COOKIE_SECRET ?? "");
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(hash);
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const secret = await getSecret();
     const { username, password } = await req.json();
 
     if (!username || !password) {
@@ -14,57 +27,73 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Timeout guard
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 10_000);
 
-    const response = await fetch(`${BASE_URL}/accounts/login/`, {
+    const resp = await fetch(`${DJANGO_BASE}/accounts/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      throw new Error(`HTTP status ${resp.status}`);
     }
 
-    const { access, refresh } = await response.json();
+    const { access, refresh, teacher_brand } = await resp.json();
 
-    const payload = await verify(access, "access");
-    let role = "student"; // Default role
+    // Verify + encrypt in parallel
+    const [verifyRes, sealed] = await Promise.all([
+      verify(access, "access"),
+      new CompactEncrypt(
+        new TextEncoder().encode(
+          JSON.stringify({ logo: teacher_brand ?? null })
+        )
+      )
+        .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
+        .encrypt(secret),
+    ]);
 
-    // Check if verification succeeded and payload exists
-    if (payload.code === 200 && payload.payload) {
-      role = payload.payload.role;
-    }
+    const role =
+      verifyRes.code === 200 && verifyRes.payload?.role
+        ? verifyRes.payload.role
+        : "student";
 
-    const final = NextResponse.json(
-      {
-        message: "valid credentials",
-        redirectto: `/${role}/dashboard`,
-      },
+    const out = NextResponse.json(
+      { message: "valid credentials", redirectto: `/${role}/dashboard` },
       { status: 200 }
     );
 
-    final.cookies.set("access", access, {
+    // Set cookies
+    out.cookies.set("access", access, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
+      maxAge: 60 * 60,
+      secure: process.env.NODE_ENV === "production",
+    });
+    out.cookies.set("refresh", refresh, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+      secure: process.env.NODE_ENV === "production",
+    });
+    out.cookies.set("session_data", sealed, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
       secure: process.env.NODE_ENV === "production",
     });
 
-    final.cookies.set("refresh", refresh, {
-      httpOnly: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      secure: process.env.NODE_ENV === "production",
-    });
-
-    return final;
-  } catch (error) {
-    console.error("Authentication error:", error);
+    return out;
+  } catch (err) {
+    console.error("Authentication error:", err);
     return NextResponse.json(
       { message: "Invalid credentials" },
       { status: 401 }

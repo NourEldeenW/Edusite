@@ -1,93 +1,122 @@
+// middleware.ts
 import { NextResponse, NextRequest } from "next/server";
 import verify from "./app/(main)/global functions/verify";
+import { compactDecrypt, CompactEncrypt } from "jose";
 
-const apiu = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
+const DJANGO_BASE = process.env.NEXT_PUBLIC_DJANGO_BASE_URL!;
+
+interface SessionData {
+  logo: string | null;
+}
 
 /**
- * This middleware verifies the access token and refreshes it if it's invalid.
- * It sets headers with user role, access token, and username if the access token is valid.
- * If the access token is invalid and there is no refresh token, it redirects to the login page.
- * If the access token is invalid and there is a refresh token, it refreshes the access token and
- * continues with the request.s
- * If there is an error while verifying the access token, it redirects to the login page.
+ * Hash COOKIE_SECRET → SHA-256 → 32-byte key
  */
+async function getSecret(): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(process.env.COOKIE_SECRET ?? "");
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(hash);
+}
+
 export async function middleware(req: NextRequest) {
   try {
-    const accesstok = req.cookies.get("access")?.value || "notfound";
-    const res = await verify(accesstok, "access");
+    const secret = await getSecret();
+    const accessToken = req.cookies.get("access")?.value ?? "notfound";
+    const sessionCookie = req.cookies.get("session_data")?.value;
+    const refreshToken = req.cookies.get("refresh")?.value;
 
-    if (res.code !== 200) {
-      const reftoken = req.cookies.get("refresh")?.value;
-      if (!reftoken) return redirectToLogin(req);
+    // Verify + decrypt in parallel
+    const [verifyRes, sessionData] = await Promise.all([
+      verify(accessToken, "access").catch(() => ({ code: 401 })),
+      sessionCookie
+        ? compactDecrypt(sessionCookie, secret)
+            .then(
+              ({ plaintext }) =>
+                JSON.parse(new TextDecoder().decode(plaintext)) as SessionData
+            )
+            .catch(() => null)
+        : Promise.resolve<SessionData | null>(null),
+    ]);
 
-      const r = await verify(reftoken, "refresh");
-      if (r.code !== 200) return redirectToLogin(req);
+    const validSession = sessionData !== null && "logo" in sessionData;
 
-      return handleTokenRefresh(req, reftoken);
+    if (verifyRes.code !== 200 || !validSession) {
+      if (!refreshToken) return redirectToLogin(req);
+      return handleRefresh(req, refreshToken, secret);
     }
 
-    const requestHeaders = new Headers(req.headers);
-    if (res.payload) {
-      requestHeaders.set("x-user-role", res.payload.role);
-      requestHeaders.set("access", accesstok);
-      requestHeaders.set("username", res.payload.username);
-      const response = NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
-      return response;
+    // Attach headers & continue
+    const headers = new Headers(req.headers);
+    if ("payload" in verifyRes) {
+      headers.set("x-user-role", verifyRes.payload?.role ?? "");
+      headers.set("username", verifyRes.payload?.username ?? "");
+      headers.set("access", accessToken);
     }
+    headers.set("logo", sessionData!.logo ?? "EduTrack");
+
+    return NextResponse.next({ request: { headers } });
   } catch {
     return redirectToLogin(req);
   }
 }
 
 function redirectToLogin(req: NextRequest) {
-  return NextResponse.redirect(new URL("/login", req.url));
+  const res = NextResponse.redirect(new URL("/login", req.url));
+  res.cookies.set("access", "", { expires: new Date(0), path: "/" });
+  res.cookies.set("refresh", "", { expires: new Date(0), path: "/" });
+  res.cookies.set("session_data", "", { expires: new Date(0), path: "/" });
+  return res;
 }
 
-async function handleTokenRefresh(req: NextRequest, reftoken: string) {
+async function handleRefresh(
+  req: NextRequest,
+  token: string,
+  secret: Uint8Array
+) {
   try {
-    const refreshResponse = await fetch(`${apiu}accounts/refresh/`, {
+    const refreshRes = await fetch(`${DJANGO_BASE}/accounts/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: reftoken }),
+      body: JSON.stringify({ refresh: token }),
     });
 
-    if (refreshResponse.status !== 200) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      const res = NextResponse.json({ message: "invalid token" });
+    if (!refreshRes.ok) return redirectToLogin(req);
 
-      res.cookies.set("access", "", { expires: new Date(0) });
-      res.cookies.set("refresh", "", { expires: new Date(0) });
+    const { access, refresh, teacher_brand } = await refreshRes.json();
+    const sessionData: SessionData = { logo: teacher_brand ?? null };
 
-      return res;
-    }
+    // Re-encrypt session_data
+    const sealed = await new CompactEncrypt(
+      new TextEncoder().encode(JSON.stringify(sessionData))
+    )
+      .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
+      .encrypt(secret);
 
-    const newTokens = await refreshResponse.json();
-    const final = NextResponse.redirect(req.nextUrl.clone());
-
-    final.cookies.set("access", newTokens.access, {
+    const res = NextResponse.redirect(req.nextUrl.clone());
+    res.cookies.set("access", access, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
+      maxAge: 60 * 60,
+      secure: process.env.NODE_ENV === "production",
     });
-
-    final.cookies.set("refresh", newTokens.refresh, {
+    res.cookies.set("refresh", refresh, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+      secure: process.env.NODE_ENV === "production",
     });
-    const verifiedNew = await verify(newTokens.access, "access");
-    if (verifiedNew.payload) {
-      final.headers.set("x-user-role", verifiedNew.payload.role);
-      final.headers.set("access", newTokens.access);
-      final.headers.set("username", verifiedNew.payload.username);
-    }
+    res.cookies.set("session_data", sealed, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+      secure: process.env.NODE_ENV === "production",
+    });
 
-    return final;
+    return res;
   } catch {
     return redirectToLogin(req);
   }

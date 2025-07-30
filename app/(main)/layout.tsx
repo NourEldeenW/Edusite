@@ -220,10 +220,11 @@ export default async function RootLayout({
   const headers_data = await headers();
   const role =
     (headers_data.get("x-user-role") as keyof typeof links) || "student";
+  const logo = headers_data.get("logo") || "error";
 
   return (
     <div className="grid grid-cols-1 grid-rows-[auto_1fr] sm:grid-cols-[auto_1fr] sm:grid-rows-1 min-h-[100dvh]">
-      <Navbar links={links[role]} />
+      <Navbar links={links[role]} logo={logo} />
       <main className="p-6 bg-bg-base sm:col-start-2">{children}</main>
     </div>
   );

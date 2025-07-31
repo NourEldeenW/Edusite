@@ -16,6 +16,7 @@ export default async function studyMat() {
 
   const access = headerData.get("access");
   if (!access) redirect("/login");
+
   return (
     <>
       <Main access={access} />

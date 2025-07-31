@@ -77,6 +77,7 @@ export function AddTeacherButton({ accesss, triggerRefresh }: Access) {
       addIf("full_name", formData.get("full_name"));
       addIf("phone_number", formData.get("phone_number"));
       addIf("gender", formData.get("gender"));
+      addIf("brand", formData.get("brand"));
 
       // Subject (number)
       const subjectVal = formData.get("subject");
@@ -216,6 +217,18 @@ export function AddTeacherButton({ accesss, triggerRefresh }: Access) {
                   </div>
                 </div>
               </div>
+
+              <div className="group">
+                <label className="block text-sm font-medium mb-1 text-text-primary">
+                  Brand
+                </label>
+                <input
+                  type="text"
+                  name="brand"
+                  className="w-full px-3 py-2 rounded-lg border bg-bg-primary transition-all duration-200 border-border-default focus:border-primary focus:ring-primary/20"
+                />
+              </div>
+
               {/* Grades */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-text-primary">

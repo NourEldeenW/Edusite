@@ -30,6 +30,7 @@ interface TeacherDetail {
   user: string;
   subject: ListItem;
   grades: number[];
+  brand?: string;
 }
 
 interface Teacher {
@@ -183,6 +184,7 @@ export default function TeachersTable({
       addIf("password", formData.get("password"));
       addIf("full_name", formData.get("full_name"));
       addIf("phone_number", formData.get("phone_number"));
+      addIf("brand", formData.get("brand"));
 
       // gender and subject come from fetched data
       payload.gender = teacherFetchedData.gender;
@@ -343,6 +345,10 @@ export default function TeachersTable({
             <div className="h-10 bg-gray-200 rounded-lg" />
           </div>
         ))}
+      </div>
+      <div>
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+        <div className="h-10 bg-gray-200 rounded-lg" />
       </div>
       <div>
         <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
@@ -901,6 +907,22 @@ export default function TeachersTable({
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary pointer-events-none" />
                     </div>
                   </div>
+                </div>
+
+                <div className="group">
+                  <label className="block text-sm font-medium mb-1 text-text-primary">
+                    Brand
+                  </label>
+                  <input
+                    type="text"
+                    name="brand"
+                    className="w-full px-3 py-2 rounded-lg border bg-bg-primary transition-all duration-200 border-border-default focus:border-primary focus:ring-primary/20"
+                    defaultValue={teacherFetchedData.brand}
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoSave="off"
+                  />
                 </div>
                 {/* Grades */}
                 <div>

@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import verify from "@/app/(main)/global functions/verify";
 import { CompactEncrypt } from "jose";
-
 const DJANGO_BASE = process.env.NEXT_PUBLIC_DJANGO_BASE_URL!;
 
 /**

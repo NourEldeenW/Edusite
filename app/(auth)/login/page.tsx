@@ -24,9 +24,7 @@ export default function Home() {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="mb-8 text-center">
-            <h1 className="font-['Pacifico'] text-4xl text-primary">
-              EduTrack
-            </h1>
+            <h1 className="font-pacifico text-4xl text-primary">EduTrack</h1>
             <p className="mt-2 text-lg text-gray-600/90">
               Sign in to access your dashboard
             </p>

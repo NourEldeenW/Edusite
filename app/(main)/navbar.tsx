@@ -203,16 +203,16 @@ export default function Navbar({ links, logo }: NavbarProps) {
 
       {!isMobile ? (
         <nav
-          className={`sticky h-[100dvh] bg-gradient-to-br from-primary via-indigo-600 to-indigo-800 p-6 top-0 self-start overflow-hidden transition-all duration-500 ease-out ${
+          className={`sticky h-[100dvh] bg-gradient-to-br from-primary via-indigo-600 to-indigo-800 p-6 top-0 self-start overflow-hidden transition-all duration-300 ease-out ${
             isOpen ? "w-27" : "w-[260px]"
           } shadow-2xl border-r border-white/10`}>
           <ul className="h-full flex flex-col">
             {/* Logo Section */}
-            <li className="mb-10 font-['Pacifico'] text-2xl text-white flex justify-between items-center relative">
+            <li className="mb-7 font-pacifico text-2xl text-white flex justify-between items-center relative">
               <ScrollingLogo />
               <button
-                className={`hover:bg-white/20 active:bg-white/30 p-3 rounded-xl flex items-center active:scale-95 transition-all duration-300 ease-out shadow-lg hover:shadow-xl ${
-                  isOpen ? "rotate-180" : "rotate-0"
+                className={`hover:bg-white/20 active:bg-white/30 p-3 rounded-xl flex items-center active:scale-95 transition-all duration-300 ease-out hover:shadow-xl ${
+                  isOpen ? "rotate-90" : "rotate-0"
                 } backdrop-blur-sm`}
                 onClick={() => setIsOpen(!isOpen)}>
                 <Menu
@@ -251,7 +251,7 @@ export default function Navbar({ links, logo }: NavbarProps) {
                         )}
                       </span>
                       <span
-                        className={`whitespace-nowrap transition-all duration-500 ease-out ${
+                        className={`whitespace-nowrap transition-all duration-300 ease-out ${
                           isOpen
                             ? "opacity-0 translate-x-6 pointer-events-none"
                             : "opacity-100 translate-x-0"

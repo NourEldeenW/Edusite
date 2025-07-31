@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
 
   res.cookies.set("access", "", { expires: new Date(0) });
   res.cookies.set("refresh", "", { expires: new Date(0) });
+  res.cookies.set("session_data", "", { expires: new Date(0) });
 
   return res;
 }

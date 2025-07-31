@@ -15,9 +15,7 @@ import {
   faCalendarWeek,
   faFilePdf,
   faFont,
-  faImage,
   faLink,
-  faVideo,
   faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -544,18 +542,6 @@ export default function StudyMaterialsMain({ access }: MainProps) {
               color: "text-red-500",
               label: "PDF",
               count: materialCounts.pdf,
-            },
-            {
-              icon: faVideo,
-              color: "text-blue-500",
-              label: "Videos",
-              count: materialCounts.video,
-            },
-            {
-              icon: faImage,
-              color: "text-green-500",
-              label: "Images",
-              count: materialCounts.image,
             },
             {
               icon: faFont,

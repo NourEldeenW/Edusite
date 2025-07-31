@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/axiosinterceptor";
 import Link from "next/link";
+import { formatUserDate } from "@/lib/formatDate";
 
 // Types matching the API shape
 interface Profile {
@@ -238,7 +239,7 @@ export default function StudentDashboard({ access }: { access: string }) {
                   Student ID QR Code
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col items-center space-y-4 p-4">
+              <div className="flex flex-col items-center space-y-4">
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <QRCode
                     value={profile.student_id}
@@ -624,7 +625,7 @@ export default function StudentDashboard({ access }: { access: string }) {
                         <div>
                           <h4 className="font-medium">{w.title}</h4>
                           <p className="text-sm text-gray-500 mt-1">
-                            Published: {w.date_created}
+                            Published: {formatUserDate(w.date_created)}
                           </p>
                         </div>
                       </div>

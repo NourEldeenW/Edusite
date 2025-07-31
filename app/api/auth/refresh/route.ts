@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { CompactEncrypt } from "jose";
+
+// Reuse secret derivation from login API
+async function getSecret(): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(process.env.COOKIE_SECRET ?? "");
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(hash);
+}
 
 export async function POST() {
   try {
-    // Await the cookies() function
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get("refresh")?.value;
 
@@ -14,6 +22,7 @@ export async function POST() {
       );
       response.cookies.delete("access");
       response.cookies.delete("refresh");
+      response.cookies.delete("session_data");
       return response;
     }
 
@@ -32,6 +41,7 @@ export async function POST() {
       );
       response.cookies.delete("access");
       response.cookies.delete("refresh");
+      response.cookies.delete("session_data");
       return response;
     }
 
@@ -41,8 +51,19 @@ export async function POST() {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax" as const,
-      maxAge: 60 * 60 * 24 * 30, // 30 days
     };
+
+    // Encrypt session data same as login API
+    const sessionData = {
+      logo: newTokens.teacher_brand ?? null,
+    };
+
+    const secret = await getSecret();
+    const sealed = await new CompactEncrypt(
+      new TextEncoder().encode(JSON.stringify(sessionData))
+    )
+      .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
+      .encrypt(secret);
 
     const response = NextResponse.json(
       { access: newTokens.access },
@@ -52,12 +73,22 @@ export async function POST() {
     response.cookies.set({
       name: "access",
       value: newTokens.access,
+      maxAge: 60 * 60, // 1 hour
       ...cookieOptions,
     });
 
     response.cookies.set({
       name: "refresh",
       value: newTokens.refresh,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      ...cookieOptions,
+    });
+
+    // Set session_data cookie same as login API
+    response.cookies.set({
+      name: "session_data",
+      value: sealed,
+      maxAge: 60 * 60, // 1 hour (matches access token)
       ...cookieOptions,
     });
 

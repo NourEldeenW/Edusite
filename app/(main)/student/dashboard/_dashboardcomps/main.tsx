@@ -41,7 +41,6 @@ import {
   Award,
   Bookmark,
   Notebook,
-  ChevronRight,
   BookText,
   Users2,
 } from "lucide-react";
@@ -492,9 +491,14 @@ export default function StudentDashboard({ access }: { access: string }) {
             </CardContent>
             <CardFooter className="py-3 bg-gray-50">
               <Button
-                variant="ghost"
-                className="text-indigo-600 flex items-center ml-auto hover:text-text-inverse">
-                View all quizzes <ChevronRight className="h-4 w-4 ml-1" />
+                variant="outline"
+                size="sm"
+                className="w-full bg-transparent p-0">
+                <Link
+                  href={"/student/quizzes"}
+                  className="w-full h-full flex items-center justify-center hover:text-text-inverse">
+                  View All Quizzes
+                </Link>
               </Button>
             </CardFooter>
           </Card>

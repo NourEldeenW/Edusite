@@ -28,6 +28,7 @@ interface propsType {
   score: string | null;
   timeTaken: string;
   submission_status: "on_time" | "late";
+  role: "s" | "t" | "a";
 }
 
 // --- Helper Functions ---
@@ -161,7 +162,7 @@ export default function Headers(data: propsType) {
         onClick={() => router.back()}
         className="flex items-center gap-2 text-primary hover:bg-primary/10 hover:text-primary-hover px-3 py-2 mb-6 rounded-lg transition-colors">
         <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4" />
-        Back to Quiz Details
+        Back to {data.role === "s" ? "Quizzes Dashboard" : "Quiz Details"}
       </Button>
 
       <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-200 mx-auto">

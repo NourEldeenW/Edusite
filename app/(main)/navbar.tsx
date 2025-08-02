@@ -103,7 +103,14 @@ export default function Navbar({ links, logo }: NavbarProps) {
     <span className="animate-spin inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
   );
 
+  // FIXED: Enhanced active link detection
   const isActiveLink = (href: string, currentPath: string) => {
+    // Special case for quizzes routes
+    if (href === "/student/quizzes" && currentPath.startsWith("/quizzes")) {
+      return currentPath.startsWith("/quizzes");
+    }
+
+    // Default behavior
     return currentPath === href || currentPath.startsWith(`${href}/`);
   };
 

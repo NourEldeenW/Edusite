@@ -99,7 +99,7 @@ export default function QDashboard({
     setSearchQuery("");
   };
 
-  const filteredSessions = useMemo(() => {
+  const filteredQuizzes = useMemo(() => {
     return allQuizzes.filter((quiz) => {
       const matchesSearch = quiz.title
         .toLowerCase()
@@ -313,9 +313,9 @@ export default function QDashboard({
       </div>
 
       {/* Quiz Grid */}
-      {filteredSessions.length > 0 ? (
+      {filteredQuizzes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSessions.map((quiz) => {
+          {filteredQuizzes.map((quiz) => {
             return (
               <div
                 key={quiz.id}

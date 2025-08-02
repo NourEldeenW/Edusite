@@ -138,6 +138,10 @@ async function SubmissionReviewContent({
           : null,
       timeTaken: submissionData.time_taken,
       submission_status: submissionData.submission_status,
+      role: (role === "student" ? "s" : role === "teacher" ? "t" : "a") as
+        | "s"
+        | "t"
+        | "a", // Explicitly cast role to 's', 't', or 'a'
     };
 
     if (role === "teacher" || role === "assistant") {

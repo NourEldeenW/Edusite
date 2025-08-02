@@ -209,6 +209,18 @@ const links = {
         />
       ),
     },
+    {
+      href: "/student/quizzes",
+      key: "quizzes",
+      name: "Online Quizzes",
+      icon: (
+        <FontAwesomeIcon
+          icon={faFilePen}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
   ],
 };
 

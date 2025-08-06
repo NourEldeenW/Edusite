@@ -1,11 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faFilePdf,
-  faVideo,
-  faImage,
-  faFont,
-  faLink,
-} from "@fortawesome/free-solid-svg-icons";
+import { faFilePdf, faFont, faLink } from "@fortawesome/free-solid-svg-icons";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,8 +11,6 @@ interface GradeSidebarProps {
   setSelectedGrade: (id: number) => void;
   materialCounts: {
     pdf: number;
-    video: number;
-    image: number;
     text: number;
     link: number;
   };
@@ -143,18 +135,6 @@ export default function GradeSidebar({
               color: "text-red-500",
               label: "PDF Documents",
               count: materialCounts.pdf,
-            },
-            {
-              icon: faVideo,
-              color: "text-blue-500",
-              label: "Videos",
-              count: materialCounts.video,
-            },
-            {
-              icon: faImage,
-              color: "text-green-500",
-              label: "Images",
-              count: materialCounts.image,
             },
             {
               icon: faFont,

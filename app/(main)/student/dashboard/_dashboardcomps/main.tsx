@@ -348,7 +348,7 @@ export default function StudentDashboard({ access }: { access: string }) {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Pending Quizzes
+                  Online Quizzes
                 </h3>
                 <p className="text-2xl font-bold">
                   {quizzes.filter((q) => q.score === null).length}
@@ -475,12 +475,10 @@ export default function StudentDashboard({ access }: { access: string }) {
                         </div>
 
                         <div>
-                          {q.score ? (
+                          {q.score && (
                             <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                               {q.score}
                             </Badge>
-                          ) : (
-                            <Button size="sm">Take Quiz</Button>
                           )}
                         </div>
                       </div>

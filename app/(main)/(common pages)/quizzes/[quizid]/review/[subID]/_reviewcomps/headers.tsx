@@ -14,8 +14,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import clsx from "clsx";
+import { formatUserDate } from "@/lib/formatDate";
 
 interface propsType {
   studentID: string;
@@ -76,14 +76,6 @@ function getNumericPercentage(fractionStr: string | null): number | null {
     return null;
   }
   return (numerator / denominator) * 100;
-}
-
-function formatDateTime(dateString: string) {
-  try {
-    return format(new Date(dateString), "MMM dd, yyyy, hh:mm a");
-  } catch {
-    return "Invalid Date";
-  }
 }
 
 // --- Reusable Info Card Component for the bottom section ---
@@ -262,12 +254,12 @@ export default function Headers(data: propsType) {
           <InfoCard
             icon={faClock}
             label="Start Time"
-            value={formatDateTime(data.start_time)}
+            value={formatUserDate(data.start_time)}
           />
           <InfoCard
             icon={faClock}
             label="End Time"
-            value={formatDateTime(data.end_time)}
+            value={formatUserDate(data.end_time)}
           />
           <InfoCard
             icon={faHourglassHalf}

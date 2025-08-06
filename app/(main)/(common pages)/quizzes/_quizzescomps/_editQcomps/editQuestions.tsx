@@ -22,7 +22,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
-import { ChangeEvent, useCallback, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const QUESTION_TYPES = [
   { label: "Single Answer", value: "single" },
@@ -31,7 +38,7 @@ const QUESTION_TYPES = [
 
 export default function EditQuestions() {
   const quizDetails = useQEditStore((s) => s.quizDetails);
-  const questions = quizDetails?.questions || [];
+  const questions = useMemo(() => quizDetails?.questions || [], [quizDetails]);
 
   // Store actions
   const addQuestion = useQEditStore((s) => s.addQuestion);
@@ -52,7 +59,19 @@ export default function EditQuestions() {
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(
     new Set()
   );
+  const [localPoints, setLocalPoints] = useState<Record<number, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    // Check if questions exist to avoid errors on initial load
+    if (questions) {
+      const initialPoints = questions.reduce((acc, q, i) => {
+        acc[i] = String(q.points);
+        return acc;
+      }, {} as Record<number, string>);
+      setLocalPoints(initialPoints);
+    }
+  }, [questions]);
 
   // Handlers
   const toggleCollapseMode = () => {
@@ -124,18 +143,34 @@ export default function EditQuestions() {
     }
   };
 
-  const handlePointsChange = (e: ChangeEvent<HTMLInputElement>, qi: number) => {
-    const v = e.target.value;
-    if (v === "") {
-      editQuestion(qi, { points: 1 });
-      return;
+  const handleLocalPointsChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    qi: number
+  ) => {
+    const value = e.target.value;
+    // Allow empty string, numbers, and a single decimal point for smooth typing
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setLocalPoints((prev) => ({ ...prev, [qi]: value }));
     }
-    const rx = /^\d+(\.\d{0,2})?$/;
-    if (!rx.test(v)) return;
-    const pts = parseFloat(v);
-    if (!isNaN(pts)) {
-      editQuestion(qi, { points: pts });
+  };
+
+  const handlePointsBlur = (qi: number) => {
+    const localValue = localPoints[qi];
+    let finalPoints = parseFloat(localValue);
+
+    // If parsing fails, value is empty, or less than min, default to 1
+    if (isNaN(finalPoints) || finalPoints < 0.5) {
+      finalPoints = 1;
     }
+
+    // Round to 2 decimal places to be safe
+    finalPoints = parseFloat(finalPoints.toFixed(2));
+
+    // Update the global store (Zustand)
+    editQuestion(qi, { points: finalPoints });
+
+    // Sync the local state in case it was defaulted or formatted, ensuring UI consistency
+    setLocalPoints((prev) => ({ ...prev, [qi]: String(finalPoints) }));
   };
 
   const handleQuestionImageUpload = useCallback(
@@ -371,11 +406,13 @@ export default function EditQuestions() {
                     Points
                   </label>
                   <Input
-                    type="number"
+                    type="text" // Use text to allow empty and intermediate values like "5."
+                    inputMode="decimal" // Provides a numeric keypad on mobile devices
                     step="0.01"
                     min="0.5"
-                    value={question.points}
-                    onChange={(e) => handlePointsChange(e, qi)}
+                    value={localPoints[qi] || ""} // Read from local state
+                    onChange={(e) => handleLocalPointsChange(e, qi)} // Update local state
+                    onBlur={() => handlePointsBlur(qi)} // Validate and update global store
                     className="w-full border-gray-300 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>

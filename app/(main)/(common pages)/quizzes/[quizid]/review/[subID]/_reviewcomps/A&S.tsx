@@ -1,6 +1,30 @@
 import { CheckIcon, XIcon as XMarkIcon } from "lucide-react";
 import Image from "next/image";
 
+// Define interfaces for nested objects
+interface QuestionType {
+  id: number;
+  text: string;
+  image: null | string;
+}
+
+interface ChoiceType {
+  id: number;
+  text: string;
+  image: null | string;
+  is_correct: boolean;
+}
+
+interface AnswerType {
+  id: number;
+  question: QuestionType;
+  selection_type: "single" | "multiple";
+  choices: ChoiceType[];
+  selected_choices: ChoiceType[];
+  is_correct: boolean;
+  points_earned: number;
+}
+
 interface ApiDataType {
   id: number;
   quiz_title: string;
@@ -21,29 +45,7 @@ interface ApiDataType {
   score: string;
   is_submitted: boolean;
   time_taken: string;
-  answers: Array<{
-    id: number;
-    question: {
-      id: number;
-      text: string;
-      image: null | string;
-    };
-    selection_type: "single" | "multiple";
-    choices: Array<{
-      id: number;
-      text: string;
-      image: null | string;
-      is_correct: boolean;
-    }>;
-    selected_choices: Array<{
-      id: number;
-      text: string;
-      image: null | string;
-      is_correct: boolean;
-    }>;
-    is_correct: boolean;
-    points_earned: number;
-  }>;
+  answers?: AnswerType[];
   submission_status: "on_time" | "late";
   is_score_released: boolean;
   are_answers_released: boolean;
@@ -54,7 +56,7 @@ interface AnswersAndScoresProps {
 }
 
 export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
-  const getQuestionStatus = (answer: ApiDataType["answers"][0]) => {
+  const getQuestionStatus = (answer: AnswerType) => {
     if (!data.are_answers_released) return null;
 
     if (answer.is_correct) {
@@ -80,15 +82,12 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
 
   const isChoiceSelected = (
     choiceId: number,
-    selectedChoices: ApiDataType["answers"][0]["selected_choices"]
+    selectedChoices: ChoiceType[]
   ) => {
     return selectedChoices.some((selected) => selected.id === choiceId);
   };
 
-  const getChoiceStyle = (
-    choice: ApiDataType["answers"][0]["choices"][0],
-    isSelected: boolean
-  ) => {
+  const getChoiceStyle = (choice: ChoiceType, isSelected: boolean) => {
     if (!data.are_answers_released) {
       return isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300";
     }
@@ -104,10 +103,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
     }
   };
 
-  const getCheckboxStyle = (
-    choice: ApiDataType["answers"][0]["choices"][0],
-    isSelected: boolean
-  ) => {
+  const getCheckboxStyle = (choice: ChoiceType, isSelected: boolean) => {
     if (!data.are_answers_released) {
       return isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300";
     }
@@ -126,16 +122,14 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
   };
 
   return (
-    <div
-      className="mx-auto p-4 bg-gray-50 min-h-screen max-w-4xl"
-      style={{ scrollBehavior: "smooth" }}>
+    <div className="mx-auto p-4 bg-gray-50 min-h-screen max-w-4xl">
       {/* Header */}
       <h2 className="text-2xl font-semibold mb-4">Questions & Answers</h2>
 
       {/* Quick Nav */}
-      {data.answers.length > 0 && (
+      {(data.answers?.length ?? 0) > 0 && (
         <div className="question-nav mb-6 flex flex-wrap gap-2">
-          {data.answers.map((_, idx) => (
+          {data.answers?.map((_, idx) => (
             <a
               key={idx}
               href={`#question-${idx + 1}`}
@@ -148,7 +142,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
 
       {/* Questions List */}
       <div className="question-list space-y-8">
-        {data.answers.map((answer, index) => {
+        {data.answers?.map((answer, index) => {
           const questionStatus = getQuestionStatus(answer);
 
           return (
@@ -234,7 +228,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
                             )}
                             {isSelected && (
                               <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded">
-                                Yours
+                                Student&apos;s
                               </span>
                             )}
                           </div>
@@ -265,7 +259,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
       </div>
 
       {/* Compact No Data Message */}
-      {!data.are_answers_released && !data.is_score_released && (
+      {!data.are_answers_released && (
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 text-center mt-8">
           <XMarkIcon className="w-8 h-8 mx-auto mb-3 text-gray-400" />
           <h3 className="text-base font-medium mb-1">Results Not Available</h3>

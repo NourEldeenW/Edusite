@@ -8,8 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   faFilePdf,
-  faVideo,
-  faImage,
   faFont,
   faLink,
   faEllipsisVertical,
@@ -38,7 +36,7 @@ if (!DJANGO_API_URL) {
 export interface MaterialCardData {
   id: number;
   title: string;
-  type: "pdf" | "video" | "image" | "text" | "link";
+  type: "pdf" | "text" | "link";
   date: string;
   file_url?: string;
   text_content?: string;
@@ -119,14 +117,6 @@ const getTypeStyles = (() => {
       pdf: {
         iconClass: faFilePdf,
         bgClass: "bg-red-100 text-red-800",
-      },
-      video: {
-        iconClass: faVideo,
-        bgClass: "bg-blue-100 text-blue-800",
-      },
-      image: {
-        iconClass: faImage,
-        bgClass: "bg-green-100 text-green-800",
       },
       text: {
         iconClass: faFont,

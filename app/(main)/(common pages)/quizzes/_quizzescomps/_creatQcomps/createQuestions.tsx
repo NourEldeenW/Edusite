@@ -22,7 +22,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
-import { ChangeEvent, useCallback, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 
 const QUESTION_TYPES = [
   { label: "Single Answer", value: "single" },
@@ -50,7 +50,17 @@ export default function CreateQuestions() {
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(
     new Set()
   );
+  const [localPoints, setLocalPoints] = useState<Record<number, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Sync local state when global `questions` state changes
+  useEffect(() => {
+    const initialPoints = questions.reduce((acc, q, i) => {
+      acc[i] = String(q.points);
+      return acc;
+    }, {} as Record<number, string>);
+    setLocalPoints(initialPoints);
+  }, [questions]);
 
   const toggleCollapseMode = () => {
     setIsCollapseMode((prev) => !prev);
@@ -127,18 +137,34 @@ export default function CreateQuestions() {
     }
   };
 
-  const handlePointsChange = (e: ChangeEvent<HTMLInputElement>, qi: number) => {
-    const v = e.target.value;
-    if (v === "") {
-      editQuestion(qi, { points: 1 });
-      return;
+  const handleLocalPointsChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    qi: number
+  ) => {
+    const value = e.target.value;
+    // Allow empty string, numbers, and a single decimal point
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setLocalPoints((prev) => ({ ...prev, [qi]: value }));
     }
-    const rx = /^\d+(\.\d{0,2})?$/;
-    if (!rx.test(v)) return;
-    const pts = parseFloat(v);
-    if (!isNaN(pts)) {
-      editQuestion(qi, { points: pts });
+  };
+
+  const handlePointsBlur = (qi: number) => {
+    const localValue = localPoints[qi];
+    let finalPoints = parseFloat(localValue);
+
+    // If parsing fails, value is empty, or less than min, default to 1
+    if (isNaN(finalPoints) || finalPoints < 0.5) {
+      finalPoints = 1;
     }
+
+    // Round to 2 decimal places to be safe
+    finalPoints = parseFloat(finalPoints.toFixed(2));
+
+    // Update the global store
+    editQuestion(qi, { points: finalPoints });
+
+    // Sync the local state in case it was defaulted or formatted
+    setLocalPoints((prev) => ({ ...prev, [qi]: String(finalPoints) }));
   };
 
   const handleQuestionImageUpload = useCallback(
@@ -386,11 +412,13 @@ export default function CreateQuestions() {
                     Points
                   </label>
                   <Input
-                    type="number"
+                    type="text" // Use text to allow empty and intermediate values like "5."
+                    inputMode="decimal" // Provides a numeric keypad on mobile devices
                     step="0.01"
                     min="0.5"
-                    value={question.points}
-                    onChange={(e) => handlePointsChange(e, qi)}
+                    value={localPoints[qi] || ""} // Read from local state
+                    onChange={(e) => handleLocalPointsChange(e, qi)} // Update local state on change
+                    onBlur={() => handlePointsBlur(qi)} // Validate and update global store on blur
                     className="w-full border-gray-300 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>

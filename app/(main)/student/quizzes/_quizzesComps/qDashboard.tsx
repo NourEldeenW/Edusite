@@ -124,7 +124,7 @@ export default function QDashboard({
   // Error State
   if (error) {
     return (
-      <div className="p-6">
+      <div className="">
         <div className="header flex justify-between items-center flex-wrap gap-4 mb-8">
           <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
             Quizzes Dashboard
@@ -332,8 +332,10 @@ export default function QDashboard({
                           );
                           break;
                         case "Start Quiz":
+                          router.push(`/student/quizzes/quiz/${quiz.id}`);
+                          break;
                         case "Continue Quiz":
-                          router.push(`/quizzes/${quiz.id}`);
+                          router.push(`/student/quizzes/quiz/${quiz.id}`);
                           break;
                       }
                     }}

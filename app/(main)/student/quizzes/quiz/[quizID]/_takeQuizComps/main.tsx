@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import Header from "./header";
 import HeaderSkeleton from "./headerSkeleton";
 import QuizNavigation from "./navigation";
+import Question from "./question";
+import { useRouter } from "next/navigation";
 
 interface propsType {
   access: string;
@@ -13,10 +15,11 @@ interface propsType {
 
 export default function TakeQuiz({ access, quizId }: propsType) {
   const loading = useTakeQuizStore((state) => state.loading);
-  // const error = useTakeQuizStore((state) => state.error);
+  const error = useTakeQuizStore((state) => state.error);
   const setSelectedQuizID = useTakeQuizStore.getState().setSelectedQuiz;
   const setAuthToken = useTakeQuizStore.getState().setAuthToken;
 
+  const router = useRouter();
   useEffect(() => {
     if (!quizId || !access) return;
     setAuthToken(access);
@@ -26,6 +29,10 @@ export default function TakeQuiz({ access, quizId }: propsType) {
     };
   }, [access, setSelectedQuizID, quizId, setAuthToken]);
 
+  if (error) {
+    router.push("/student/quizzes");
+  }
+
   if (loading) {
     return <HeaderSkeleton />;
   }
@@ -33,6 +40,7 @@ export default function TakeQuiz({ access, quizId }: propsType) {
   return (
     <>
       {!loading && <Header />}
+      {!loading && <Question />}
       {!loading && <QuizNavigation />}
       <div className="max-w-4xl mx-auto px-4 py-8"></div>
     </>

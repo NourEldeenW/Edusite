@@ -1,5 +1,5 @@
 import useTakeQuizStore from "@/lib/stores/student/quizzes/takeQuiz";
-import { Flag, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { Flag, Loader2 } from "lucide-react";
 import { useState, useCallback } from "react";
 
 export default function QuizNavigation() {
@@ -49,16 +49,6 @@ export default function QuizNavigation() {
   const totalQuestions = quizData?.questions.length || 0;
   const progress =
     totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
-
-  // Timer formatting
-  const formatTime = (sec: number) => {
-    if (isNaN(sec)) return "00:00";
-    const m = Math.floor(sec / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = (sec % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
 
   if (!quizData) return null;
 

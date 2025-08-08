@@ -133,7 +133,7 @@ export default function Question() {
                 ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
                 : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
             }`}>
-            {isLastQuestion ? "Submit Quiz" : "Next Question"}
+            {!isLastQuestion && "Next Question"}
           </button>
         </div>
       </div>

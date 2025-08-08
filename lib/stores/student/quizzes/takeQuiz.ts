@@ -88,6 +88,10 @@ interface QuizStoreState {
   stopTimer: () => void;
   submitAnswers: () => Promise<void>;
   reset: () => void;
+
+  // New state for redirection
+  submissionCompleted: { quizId: number; submissionId: number } | null;
+  clearSubmissionCompleted: () => void;
 }
 
 // -- Persistence Helpers -----------------------------------------------------
@@ -201,6 +205,7 @@ const useTakeQuizStore = create<QuizStoreState>((set, get) => {
     selectedQuizId: null,
     loading: false,
     error: null,
+    submissionCompleted: null, // New state for redirection
 
     /**
      * setAuthToken(token)
@@ -399,11 +404,11 @@ const useTakeQuizStore = create<QuizStoreState>((set, get) => {
      * What it does:
      *   - Groups answers by question.
      *   - POSTs to /submissions/create/.
-     *   - Clears store on success.
+     *   - Clears store and sets submissionCompleted for redirection.
      */
     submitAnswers: async () => {
-      const { selectedAnswers, selectedQuizId } = get();
-      if (!selectedQuizId) return;
+      const { selectedAnswers, selectedQuizId, submissionId } = get();
+      if (!selectedQuizId || !submissionId) return;
 
       set({ loading: true, error: null });
 
@@ -425,7 +430,27 @@ const useTakeQuizStore = create<QuizStoreState>((set, get) => {
           { headers: { Authorization: `Bearer ${get().authToken}` } }
         );
 
-        get().reset();
+        // Clear persisted state and stop timer
+        localStorage.removeItem(STORAGE_KEY(selectedQuizId));
+        stopTimer();
+
+        // Reset state and set redirection info
+        set({
+          quizData: null,
+          submissionId: null,
+          startTime: null,
+          timer: 0,
+          timerInterval: null,
+          currentQuestionIndex: 0,
+          selectedAnswers: [],
+          selectedQuizId: null,
+          loading: false,
+          error: null,
+          submissionCompleted: {
+            quizId: selectedQuizId,
+            submissionId: submissionId,
+          },
+        });
       } catch (error) {
         let errorMessage = "Failed to submit answers";
 
@@ -452,7 +477,6 @@ const useTakeQuizStore = create<QuizStoreState>((set, get) => {
       if (selectedQuizId) localStorage.removeItem(STORAGE_KEY(selectedQuizId));
       stopTimer();
       set({
-        authToken: null,
         quizData: null,
         submissionId: null,
         startTime: null,
@@ -463,8 +487,16 @@ const useTakeQuizStore = create<QuizStoreState>((set, get) => {
         selectedQuizId: null,
         loading: false,
         error: null,
+        submissionCompleted: null,
       });
     },
+
+    /**
+     * clearSubmissionCompleted()
+     * When to call: after successful redirection to review page.
+     * What it does: clears the submissionCompleted state.
+     */
+    clearSubmissionCompleted: () => set({ submissionCompleted: null }),
   };
 });
 

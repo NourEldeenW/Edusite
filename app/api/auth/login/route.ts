@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
 
-    const resp = await fetch(`${DJANGO_BASE}/accounts/login/`, {
+    const resp = await fetch(`${DJANGO_BASE}accounts/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),

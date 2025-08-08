@@ -95,7 +95,7 @@ export function AddTeacherButton({ accesss, triggerRefresh }: Access) {
       }
 
       try {
-        await api.post(`${djangoapi}/accounts/teachers/create/`, payload, {
+        await api.post(`${djangoapi}accounts/teachers/create/`, payload, {
           headers: {
             Authorization: `Bearer ${accesss}`,
           },

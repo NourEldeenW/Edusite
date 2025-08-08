@@ -130,7 +130,7 @@ export default function Question() {
             onClick={isLastQuestion ? () => {} : goToNextQuestion}
             className={`w-full sm:w-auto px-8 py-2.5 font-semibold rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               isLastQuestion
-                ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                ? ""
                 : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
             }`}>
             {!isLastQuestion && "Next Question"}

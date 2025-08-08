@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       new URL("https://apitest144.pythonanywhere.com/**"),
-      new URL("https://edutrackeg.com/**"),
+      new URL("https://api.edutrackeg.com/**"),
     ],
   },
 };

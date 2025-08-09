@@ -1,6 +1,7 @@
 import useTakeQuizStore from "@/lib/stores/student/quizzes/takeQuiz";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Question() {
@@ -12,6 +13,20 @@ export default function Question() {
     selectedAnswers,
     toggleAnswer,
   } = useTakeQuizStore();
+  const router = useRouter();
+  const submissionCompleted = useTakeQuizStore((s) => s.submissionCompleted);
+  const clearSubmissionCompleted = useTakeQuizStore(
+    (s) => s.clearSubmissionCompleted
+  );
+
+  useEffect(() => {
+    if (submissionCompleted) {
+      router.push(
+        `/quizzes/${submissionCompleted.quizId}/review/${submissionCompleted.submissionId}`
+      );
+      clearSubmissionCompleted();
+    }
+  }, [submissionCompleted, router, clearSubmissionCompleted]);
 
   // Handle keyboard navigation for a better user experience
   useEffect(() => {
@@ -23,7 +38,13 @@ export default function Question() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToNextQuestion, goToPreviousQuestion]);
 
-  if (!quizData) return <NoQuizSelected />;
+  if (!quizData) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
+        <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
 
   const currentQuestion = quizData.questions[currentQuestionIndex];
   const totalQuestions = quizData.questions.length;
@@ -126,25 +147,15 @@ export default function Question() {
             className="w-full sm:w-auto px-6 py-2.5 font-semibold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors">
             Previous
           </button>
-          <button
-            onClick={isLastQuestion ? () => {} : goToNextQuestion}
-            className={`w-full sm:w-auto px-8 py-2.5 font-semibold rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isLastQuestion
-                ? ""
-                : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-            }`}>
-            {!isLastQuestion && "Next Question"}
-          </button>
+          {!isLastQuestion && (
+            <button
+              onClick={() => goToNextQuestion}
+              className="w-full sm:w-auto px-8 py-2.5 font-semibold rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500">
+              Next Question
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-// Helper component (unchanged)
-const NoQuizSelected = () => (
-  <div className="text-center py-12">
-    <h3 className="text-gray-700 text-lg">No quiz selected</h3>
-    <p className="text-gray-500">Please choose a quiz to begin</p>
-  </div>
-);

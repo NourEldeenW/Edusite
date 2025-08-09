@@ -1,6 +1,32 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import useTakeQuizStore from "@/lib/stores/student/quizzes/takeQuiz";
 import { Flag, Loader2 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+
+// Define types for better type safety
+interface Question {
+  id: number;
+  text: string;
+  // Add other properties as needed
+}
+
+interface QuizData {
+  questions: Question[];
+  // Add other properties as needed
+}
+
+interface SelectedAnswer {
+  questionID: number;
+  answerID: number;
+}
 
 export default function QuizNavigation() {
   const {
@@ -14,6 +40,7 @@ export default function QuizNavigation() {
 
   const [flaggedQuestions, setFlaggedQuestions] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Flag/unflag question
   const toggleFlag = useCallback((idx: number) => {
@@ -27,6 +54,7 @@ export default function QuizNavigation() {
     setIsSubmitting(true);
     try {
       await submitAnswers();
+      setDialogOpen(false);
     } catch (err) {
       console.error("Submission error:", err);
     } finally {
@@ -120,20 +148,124 @@ export default function QuizNavigation() {
 
           {/* Timer & Submit */}
           <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
-            <button
-              onClick={handleSubmit}
-              disabled={loading || isSubmitting}
-              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2 font-bold focus:outline-none transition-colors"
-              title="Submit quiz">
-              {isSubmitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                "Submit Quiz"
-              )}
-            </button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2 font-bold focus:outline-none transition-colors"
+                  title="Submit quiz">
+                  {loading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Submit Quiz"
+                  )}
+                </button>
+              </DialogTrigger>
+
+              <ConfDialog
+                quizData={quizData}
+                selectedAnswers={selectedAnswers}
+                submitAnswers={handleSubmit}
+                isSubmitting={isSubmitting}
+                onClose={() => setDialogOpen(false)}
+              />
+            </Dialog>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+interface ConfDialogProps {
+  quizData: QuizData;
+  selectedAnswers: SelectedAnswer[];
+  submitAnswers: () => Promise<void>;
+  isSubmitting: boolean;
+  onClose: () => void;
+}
+
+function ConfDialog({
+  quizData,
+  selectedAnswers,
+  submitAnswers,
+  isSubmitting,
+  onClose,
+}: ConfDialogProps) {
+  const [unansweredQuestions, setUnansweredQuestions] = useState<number[]>([]);
+
+  // Check if question has answer
+  const isAnswered = useCallback(
+    (questionId: number) =>
+      selectedAnswers.some((ans) => ans.questionID === questionId),
+    [selectedAnswers]
+  );
+
+  // Calculate unanswered questions when dialog opens
+  useEffect(() => {
+    if (quizData) {
+      const unanswered = quizData.questions
+        .map((question, index) => ({ index, id: question.id }))
+        .filter((q) => !isAnswered(q.id))
+        .map((q) => q.index + 1);
+
+      setUnansweredQuestions(unanswered);
+    }
+  }, [quizData, isAnswered]);
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Submit Quiz?</DialogTitle>
+        <DialogDescription>
+          {unansweredQuestions.length > 0 ? (
+            <div className="py-4">
+              <p className="font-medium text-red-500 mb-2">
+                You haven&apos;t answered {unansweredQuestions.length}{" "}
+                question(s):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {unansweredQuestions.map((num) => (
+                  <span
+                    key={num}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded-md">
+                    Question {num}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-4 text-gray-600">
+                Are you sure you want to submit anyway?
+              </p>
+            </div>
+          ) : (
+            <p className="py-4 text-gray-600">
+              You&apos;ve answered all questions. Ready to submit your quiz?
+            </p>
+          )}
+        </DialogDescription>
+      </DialogHeader>
+
+      <DialogFooter className="gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+          disabled={isSubmitting}>
+          Cancel
+        </button>
+
+        <button
+          onClick={submitAnswers}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Anyway"
+          )}
+        </button>
+      </DialogFooter>
+    </DialogContent>
   );
 }

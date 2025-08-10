@@ -39,7 +39,6 @@ export default function Main({ access }: { access: string }) {
   }, [access, setAllData, retryCount]); // Added retryCount as dependency
 
   const handleRetry = () => {
-    setIsError(false);
     setRetryCount((prev) => prev + 1);
   };
 

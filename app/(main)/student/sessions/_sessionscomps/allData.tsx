@@ -31,7 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** ----- Types ----- **/
-type AttendanceStatus = "present" | "absent" | string;
+type AttendanceStatus = "Present" | "Absent" | string;
 
 interface Homework {
   completed: boolean;
@@ -40,6 +40,8 @@ interface Homework {
 interface TestScore {
   score: number;
   max_score: number;
+  percentage: number;
+  notes: string;
 }
 
 export interface SessionType {
@@ -54,6 +56,7 @@ export interface SessionType {
   homework?: Homework;
   has_test?: boolean;
   test_score?: TestScore;
+  test_max_score?: number | string | null;
 }
 
 /** typed shape for the store's allData (adjust as needed) */
@@ -385,7 +388,7 @@ export default function AllData() {
                     </TableCell>
 
                     <TableCell>
-                      {session.attendance_status === "present" ? (
+                      {session.attendance_status === "Present" ? (
                         <Badge className="bg-green-100 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full">
                           <CheckCircleIcon className="w-4 h-4 mr-1.5" />
                           Attended
@@ -418,36 +421,41 @@ export default function AllData() {
 
                     <TableCell>
                       {session.has_test ? (
-                        session.attendance_status === "present" ? (
-                          <div className="flex items-center">
-                            <div className="w-12 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mr-3">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full",
-                                  (session.test_score?.score || 0) /
-                                    (session.test_score?.max_score || 1) >
-                                    0.7
-                                    ? "bg-green-500"
-                                    : (session.test_score?.score || 0) /
-                                        (session.test_score?.max_score || 1) >
-                                      0.5
-                                    ? "bg-yellow-500"
-                                    : "bg-rose-500"
-                                )}
-                                style={{
-                                  width: `${
-                                    ((session.test_score?.score || 0) /
-                                      (session.test_score?.max_score || 1)) *
-                                    100
-                                  }%`,
-                                }}
-                              />
+                        session.attendance_status === "Present" ? (
+                          // only show the progress UI when we actually have a test_score object
+                          session.test_score ? (
+                            <div className="flex items-center">
+                              <div className="w-12 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mr-3">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    (session.test_score.percentage ?? 0) > 0.7
+                                      ? "bg-green-500"
+                                      : (session.test_score.percentage ?? 0) >
+                                        0.5
+                                      ? "bg-yellow-500"
+                                      : "bg-rose-500"
+                                  )}
+                                  style={{
+                                    width: `${
+                                      (session.test_score.percentage ?? 0) * 100
+                                    }%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="font-medium text-gray-800 dark:text-gray-200">
+                                {session.test_score.score} /{" "}
+                                {session.test_score.max_score}
+                              </span>
                             </div>
-                            <span className="font-medium text-gray-800 dark:text-gray-200">
-                              {session.test_score?.score} /{" "}
-                              {session.test_score?.max_score}
+                          ) : (
+                            // clean fallback when there's a test but no grade yet
+                            <span className="text-gray-500 text-sm">
+                              {session.test_max_score
+                                ? `- / ${session.test_max_score}`
+                                : "-"}
                             </span>
-                          </div>
+                          )
                         ) : (
                           <span className="text-gray-500 text-sm">-</span>
                         )

@@ -11,7 +11,7 @@ interface session {
   has_homework: boolean;
   has_test: boolean;
   test_max_score: number | null;
-  attendance_status: "present" | "absent";
+  attendance_status: "Present" | "Absent";
   homework: {
     completed: boolean;
     notes: string;

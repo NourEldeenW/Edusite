@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import useQEditStore from "@/lib/stores/onlineQuizStores/editQuiz";
 import useQuizStore_initial from "@/lib/stores/onlineQuizStores/initialData";
 import {
@@ -22,7 +23,6 @@ import {
 import { format, formatDistance, intervalToDuration } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
 
 export default function QuizEditInfoCard() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -32,6 +32,12 @@ export default function QuizEditInfoCard() {
   const updateCenterTimes = useQEditStore((s) => s.updateCenterTimes);
   const { availCenters } = useQuizStore_initial();
 
+  // Local input state for timer; safe to reference quizDetails optionally here
+  const [timerValue, setTimerValue] = useState(
+    () => quizDetails?.settings?.timer_minutes?.toString() ?? "0"
+  );
+
+  // Update every minute to keep relative times fresh
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
@@ -40,10 +46,41 @@ export default function QuizEditInfoCard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Sync local timerValue if external store (settings.timer_minutes) changes.
+  useEffect(() => {
+    if (!quizDetails) return;
+    setTimerValue(quizDetails.settings.timer_minutes?.toString() ?? "0");
+  }, [quizDetails, quizDetails?.settings?.timer_minutes]);
+
   if (!quizDetails) return null;
 
   const settings = quizDetails.settings;
   const centerTimes = quizDetails.center_times;
+
+  // validate and commit on blur (or when called programmatically)
+  const validateTimeLimit = (e?: React.FocusEvent<HTMLInputElement>) => {
+    const raw = (e?.target.value ?? timerValue).trim();
+
+    // treat empty as 0 (unlimited)
+    if (raw === "") {
+      updateSettings({ ...settings, timer_minutes: 0 });
+      setTimerValue("0");
+      return;
+    }
+
+    const num = Number(raw);
+
+    if (!Number.isFinite(num) || num < 0) {
+      updateSettings({ ...settings, timer_minutes: 0 });
+      setTimerValue("0");
+      return;
+    }
+
+    // store an integer number of minutes
+    const intVal = Math.floor(num);
+    updateSettings({ ...settings, timer_minutes: intVal });
+    setTimerValue(intVal.toString());
+  };
 
   // Calculate relative time
   const getRelativeTime = (dateString: string) => {
@@ -66,7 +103,7 @@ export default function QuizEditInfoCard() {
 
       const duration = intervalToDuration({ start: startDate, end: endDate });
 
-      const parts = [];
+      const parts: string[] = [];
       if (duration.days) parts.push(`${duration.days}d`);
       if (duration.hours) parts.push(`${duration.hours}h`);
       if (duration.minutes) parts.push(`${duration.minutes}m`);
@@ -156,14 +193,11 @@ export default function QuizEditInfoCard() {
             </Label>
             <Input
               type="number"
-              min="0"
-              value={settings.timer_minutes}
-              onChange={(e) =>
-                updateSettings({
-                  ...settings,
-                  timer_minutes: Number(e.target.value),
-                })
-              }
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={timerValue}
+              onBlur={validateTimeLimit}
+              onChange={(e) => setTimerValue(e.target.value)}
               placeholder="0 for unlimited"
               className="w-full"
             />

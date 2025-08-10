@@ -258,7 +258,7 @@ export default function StudyMaterialsMain({ access }: MainProps) {
   // Use useCallback for fetchData to ensure referential stability
   const fetchData = useCallback(
     async (url: string) => {
-      if (!access) return;
+      if (!access) return [];
       try {
         const res = await api.get(url, {
           headers: { Authorization: `Bearer ${access}` },
@@ -294,6 +294,7 @@ export default function StudyMaterialsMain({ access }: MainProps) {
     }
   }, [fetchData]);
 
+  // Now these fetchers return the fetched data (useful for callers)
   const fetchWeeks = useCallback(async () => {
     setLoadingStates((prev) => ({ ...prev, weeks: true }));
     setErrors((prev) => ({ ...prev, weeks: "" }));
@@ -304,9 +305,11 @@ export default function StudyMaterialsMain({ access }: MainProps) {
       startTransition(() => {
         setWeeks(weeksData || []);
       });
+      return weeksData || [];
     } catch (error) {
       setErrors((prev) => ({ ...prev, weeks: "Failed to load study weeks" }));
       console.debug("Error loading weeks:", error);
+      return [];
     } finally {
       setLoadingStates((prev) => ({ ...prev, weeks: false }));
     }
@@ -322,12 +325,14 @@ export default function StudyMaterialsMain({ access }: MainProps) {
       startTransition(() => {
         setMaterials(materialsData || []);
       });
+      return materialsData || [];
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
         materials: "Failed to load study materials",
       }));
       console.debug("Error loading materials:", error);
+      return [];
     } finally {
       setLoadingStates((prev) => ({ ...prev, materials: false }));
     }
@@ -371,6 +376,7 @@ export default function StudyMaterialsMain({ access }: MainProps) {
       );
       // Batch state updates to minimize re-renders
       startTransition(() => {
+        // refetch lists so UI is fresh
         fetchWeeks();
         fetchMaterials();
         setIsDeleting(false);
@@ -397,11 +403,6 @@ export default function StudyMaterialsMain({ access }: MainProps) {
     []
   );
 
-  const updateWeekView = (tile: string, description: string) => {
-    if (!selectedWeek) return;
-    setSelectedWeek({ ...selectedWeek, title: tile, description: description });
-  };
-
   const handleEditMaterial = useCallback(
     (materialData: MaterialCardData) => {
       const originalMaterial = materials.find((m) => m.id === materialData.id);
@@ -426,6 +427,45 @@ export default function StudyMaterialsMain({ access }: MainProps) {
   const handleMaterialDeleted = useCallback(() => {
     fetchMaterials();
   }, [fetchMaterials]);
+
+  // NEW: Handler that runs after EditWeekForm successfully updates a week
+  // It refetches weeks & materials, updates selectedWeek to the fresh object
+  const handleWeekEditSuccess = useCallback(async () => {
+    // weekToEdit holds the id of the week we were editing
+    if (!weekToEdit) {
+      // fallback behavior
+      setCurrentView_Main("WEEKS_VIEW");
+      setWeekToEdit(null);
+      return;
+    }
+
+    try {
+      // refetch fresh data from API
+      const updatedWeeks = await fetchWeeks();
+      await fetchMaterials(); // no assignment needed
+
+      // locate the updated week object from the freshly fetched weeks
+      const freshWeek =
+        (updatedWeeks || []).find((w: Week) => w.id === weekToEdit.id) || null;
+
+      if (freshWeek) {
+        // set the selected week to the fresh object so UI reflects latest change
+        setSelectedWeek(freshWeek);
+      } else {
+        // if it's not present (maybe grade filter changed), clear selection
+        setSelectedWeek(null);
+      }
+
+      // navigate to materials view for the updated week
+      setCurrentView_Main("MATERIAL_VIEW");
+      setWeekToEdit(null);
+    } catch (err) {
+      console.debug("Error while completing week edit refresh:", err);
+      // still attempt to navigate back
+      setCurrentView_Main("MATERIAL_VIEW");
+      setWeekToEdit(null);
+    }
+  }, [fetchWeeks, fetchMaterials, weekToEdit]);
 
   // Initial data fetch - PARALLELIZED
   useEffect(() => {
@@ -514,7 +554,7 @@ export default function StudyMaterialsMain({ access }: MainProps) {
             availgrades.map((grade) => (
               <button
                 key={grade.id}
-                className={`flex-shrink-0 min-w-[150px] py-3 px-4 text-center rounded-lg text-sm font-medium whitespace-nowrap
+                className={`flex-shrink-0 min-w-[150px] py-3 px-4 text-center rounded-lg text-sm font-medium whitespace-nowrap 
                   ${
                     selectedGrade === grade.id
                       ? "bg-primary text-text-inverse shadow-md"
@@ -584,12 +624,8 @@ export default function StudyMaterialsMain({ access }: MainProps) {
         <EditWeekForm
           week={weekToEdit}
           centers={availcenters}
-          onSuccess={(t, d) => {
-            fetchWeeks();
-            updateWeekView(t, d);
-            setCurrentView_Main("MATERIAL_VIEW");
-            setWeekToEdit(null);
-          }}
+          // use our new handler so UI refreshes immediately after edit
+          onSuccess={handleWeekEditSuccess}
           onCancel={() => {
             setCurrentView_Main(selectedWeek ? "MATERIAL_VIEW" : "WEEKS_VIEW");
             setWeekToEdit(null);

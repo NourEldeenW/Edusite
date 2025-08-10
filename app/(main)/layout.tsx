@@ -210,6 +210,18 @@ const links = {
       ),
     },
     {
+      href: "/student/sessions",
+      key: "sessions",
+      name: "Sessions",
+      icon: (
+        <FontAwesomeIcon
+          icon={faBuildingUser}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
       href: "/student/quizzes",
       key: "quizzes",
       name: "Online Quizzes",

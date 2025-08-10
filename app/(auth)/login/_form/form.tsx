@@ -69,7 +69,7 @@ export default function LgnForm() {
               placeholder="Enter your username"
               required
               minLength={4}
-              maxLength={15}
+              maxLength={30}
               disabled={disabled}
               autoComplete="username"
             />
@@ -100,7 +100,7 @@ export default function LgnForm() {
               placeholder="Enter your password"
               required
               minLength={6}
-              maxLength={15}
+              maxLength={30}
               disabled={disabled}
               autoComplete="current-password"
             />

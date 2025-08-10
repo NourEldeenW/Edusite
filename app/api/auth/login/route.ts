@@ -62,8 +62,11 @@ export async function POST(req: NextRequest) {
         ? verifyRes.payload.role
         : "student";
 
+    const redirectto =
+      role === "assistant" ? `/students` : `/${role}/dashboard`;
+
     const out = NextResponse.json(
-      { message: "valid credentials", redirectto: `/${role}/dashboard` },
+      { message: "valid credentials", redirectto: redirectto },
       { status: 200 }
     );
 

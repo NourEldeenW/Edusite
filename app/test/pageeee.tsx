@@ -1,588 +1,593 @@
-"use client";
+// "use client";
 
-import { useEffect, useState } from "react";
-import QRCode from "react-qr-code";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Calendar,
-  ClipboardList,
-  BookOpen,
-  QrCode,
-  User,
-  GraduationCap,
-  School,
-  Phone,
-  Award,
-  Bookmark,
-  Notebook,
-  ChevronRight,
-  ArrowUpRight,
-  Clock,
-  BookText,
-} from "lucide-react";
-import { api } from "@/lib/axiosinterceptor";
+// import React, { useEffect, useMemo, useState } from "react";
 
-// Types matching the API shape
-interface Profile {
-  id: number;
-  student_id: string;
-  full_name: string;
-  phone_number: string;
-  parent_number: string;
-  gender: "male" | "female";
-  is_approved: boolean;
-  grade: { id: number; name: string };
-  center: { id: number; name: string };
-  teacher: { id: number; full_name: string };
-  subject_name: string;
-  username: string;
-}
+// /**
+//  * Next.js + TypeScript + Tailwind single-file page for "My Sessions"
+//  * - Fetches data from the provided API: /student/my-sessions/
+//  * - Expects an optional bearer token in localStorage under `authToken` or via env NEXT_PUBLIC_API_TOKEN
+//  * - Includes client-side filtering, CSV export, and a details modal
+//  *
+//  * How to use:
+//  * 1. Add this file to your Next.js project (for app router -> app/(main)/my-sessions/page.tsx OR pages/my-sessions.tsx)
+//  * 2. Install and configure Tailwind CSS in your project.
+//  * 3. Optionally set NEXT_PUBLIC_API_BASE to the base API url. Defaults to the base the user provided.
+//  * 4. Put an auth token in localStorage under `authToken` (if required by backend) or set NEXT_PUBLIC_API_TOKEN.
+//  */
 
-interface SessionScore {
-  session_title: string;
-  score: string;
-  date: string;
-}
+// const API_BASE =
+//   process.env.NEXT_PUBLIC_API_BASE ||
+//   "https://apitest144.pythonanywhere.com/api/session/";
 
-interface AttendanceSummary {
-  total_assigned_sessions: number;
-  attended_from_own_center: number;
-  attended_from_other_center: number;
-  total_attendance: number;
-  percentage: string;
-}
+// // ---------- Types ----------
 
-interface StudyWeek {
-  id: number;
-  title: string;
-  date_created: string;
-}
+// type Homework = {
+//   completed: boolean;
+//   notes?: string | null;
+// } | null;
 
-interface OnlineQuiz {
-  id: number;
-  title: string;
-  score: string | null;
-}
+// type TestScore = {
+//   score: number;
+//   max_score: number;
+//   percentage: number;
+//   notes?: string | null;
+// } | null;
 
-interface DashboardData {
-  profile: Profile;
-  recent_session_scores: SessionScore[];
-  attendance_summary: AttendanceSummary;
-  recent_study_weeks: StudyWeek[];
-  recent_online_quizzes: OnlineQuiz[];
-}
+// type SessionItem = {
+//   id: number;
+//   date: string; // ISO
+//   title: string;
+//   notes?: string | null;
+//   teacher_name?: string | null;
+//   grade_name?: string | null;
+//   center_name?: string | null;
+//   has_homework: boolean;
+//   has_test: boolean;
+//   test_max_score?: number | null;
+//   attendance_status?: "Present" | "Absent" | string;
+//   homework: Homework;
+//   test_score: TestScore;
+// };
 
-export default function StudentDashboard({ access }: { access: string }) {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// type Stats = {
+//   total_sessions_number: number;
+//   total_sessions_attended: number;
+//   total_absent: number;
+//   average_attendance: number;
+// };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get(
-          `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}accounts/dashboard/student/`,
-          { headers: { Authorization: `Bearer ${access}` } }
-        );
-        setData(res.data);
-        setLoading(false);
-      } catch {
-        setError("Something went wrong");
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [access]);
+// type APIResponse = {
+//   stats: Stats;
+//   sessions: SessionItem[];
+// };
 
-  if (loading) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-5 w-64" />
-          </div>
-          <Skeleton className="h-10 w-32 rounded-full" />
-        </div>
+// // ---------- Helpers ----------
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))}
-        </div>
+// const formatDate = (iso: string) => {
+//   try {
+//     const d = new Date(iso);
+//     return d.toLocaleDateString(undefined, {
+//       month: "short",
+//       day: "numeric",
+//       year: "numeric",
+//     });
+//   } catch (e) {
+//     return iso;
+//   }
+// };
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="lg:col-span-2 h-96 rounded-2xl" />
-          <Skeleton className="h-96 rounded-2xl" />
-        </div>
-      </div>
-    );
-  }
+// const downloadCSV = (
+//   rows: Record<string, any>[],
+//   filename = "sessions.csv"
+// ) => {
+//   if (!rows || rows.length === 0) return;
+//   const headers = Object.keys(rows[0]);
+//   const csv = [headers.join(",")]
+//     .concat(
+//       rows.map((r) =>
+//         headers
+//           .map((h) => {
+//             const v = r[h] == null ? "" : String(r[h]).replace(/"/g, '""');
+//             return `"${v}"`;
+//           })
+//           .join(",")
+//       )
+//     )
+//     .join("\n");
 
-  if (error || !data) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-8 text-center">
-            <div className="text-red-600 mb-4">
-              <ClipboardList className="h-12 w-12 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">
-                Unable to load dashboard
-              </h3>
-              <p className="text-sm mt-2">{error || "Something went wrong"}</p>
-            </div>
-            <Button
-              onClick={() => window.location.reload()}
-              variant="outline"
-              className="border-red-300 text-red-700 hover:bg-red-100">
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+//   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement("a");
+//   a.href = url;
+//   a.download = filename;
+//   a.click();
+//   URL.revokeObjectURL(url);
+// };
 
-  const {
-    profile,
-    attendance_summary: atn,
-    recent_session_scores: scores,
-    recent_study_weeks: weeks,
-    recent_online_quizzes: quizzes,
-  } = data;
+// // ---------- Component ----------
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back,{" "}
-            <span className="font-medium text-indigo-600">
-              {profile.full_name}
-            </span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge className="bg-indigo-100 text-indigo-700 px-3 py-1.5">
-            <Bookmark className="h-4 w-4 mr-2" />
-            {profile.grade.name} • {profile.subject_name}
-          </Badge>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2 bg-transparent">
-                <QrCode className="h-4 w-4" />
-                Show ID
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <QrCode className="h-5 w-5" />
-                  Student ID QR Code
-                </DialogTitle>
-              </DialogHeader>
-              <div className="flex flex-col items-center space-y-4 p-4">
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                  <QRCode
-                    value={profile.student_id}
-                    size={200}
-                    bgColor="transparent"
-                    fgColor="#1f2937"
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-1">Student ID</p>
-                  <Badge className="text-lg px-4 py-1.5 bg-indigo-100 text-indigo-800">
-                    {profile.student_id}
-                  </Badge>
-                </div>
-                <p className="text-xs text-gray-500 text-center">
-                  Use this QR code for attendance check-in at any center
-                </p>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+// export default function MySessionsPage() {
+//   const [data, setData] = useState<APIResponse | null>(null);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [filter, setFilter] = useState({ query: "", attendance: "all" });
+//   const [selected, setSelected] = useState<SessionItem | null>(null);
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Attendance
-                </h3>
-                <p className="text-2xl font-bold">{atn.percentage}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-100">
-                <Calendar className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <Progress
-                value={Number.parseInt(atn.percentage)}
-                className="h-2"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                {atn.total_attendance} of {atn.total_assigned_sessions} sessions
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+//   useEffect(() => {
+//     async function load() {
+//       setLoading(true);
+//       setError(null);
+//       try {
+//         const tokenFromEnv = process.env.NEXT_PUBLIC_API_TOKEN;
+//         const tokenFromStorage =
+//           typeof window !== "undefined"
+//             ? localStorage.getItem("authToken")
+//             : null;
+//         const headers: Record<string, string> = {
+//           "Content-Type": "application/json",
+//         };
+//         if (tokenFromStorage)
+//           headers["Authorization"] = `Bearer ${tokenFromStorage}`;
+//         else if (tokenFromEnv)
+//           headers["Authorization"] = `Bearer ${tokenFromEnv}`;
 
-        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Average Score
-                </h3>
-                <p className="text-2xl font-bold">87%</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-100">
-                <Award className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex items-center text-sm text-gray-500">
-                <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                <span>+2.5% from last month</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+//         const res = await fetch(`${API_BASE}student/my-sessions/`, {
+//           method: "GET",
+//           headers,
+//           credentials: "include",
+//         });
 
-        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Study Materials
-                </h3>
-                <p className="text-2xl font-bold">{weeks.length}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-100">
-                <BookText className="h-6 w-6 text-amber-600" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex items-center text-sm text-gray-500">
-                <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                <span>Updated 2 days ago</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+//         if (!res.ok) {
+//           if (res.status === 401 || res.status === 403) {
+//             setError(
+//               "Unauthorized. Please login as a student or provide a valid token (localStorage: authToken)."
+//             );
+//           } else {
+//             const text = await res.text();
+//             setError(`Failed to fetch sessions. (${res.status}) ${text}`);
+//           }
+//           setData(null);
+//         } else {
+//           const json = (await res.json()) as APIResponse;
+//           // Defensive conversions (API may return numbers as strings)
+//           json.stats = {
+//             total_sessions_number:
+//               Number(json.stats.total_sessions_number) || 0,
+//             total_sessions_attended:
+//               Number(json.stats.total_sessions_attended) || 0,
+//             total_absent: Number(json.stats.total_absent) || 0,
+//             average_attendance: Number(json.stats.average_attendance) || 0,
+//           };
+//           setData(json);
+//         }
+//       } catch (err: any) {
+//         setError(err?.message ?? String(err));
+//         setData(null);
+//       } finally {
+//         setLoading(false);
+//       }
+//     }
 
-        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Pending Quizzes
-                </h3>
-                <p className="text-2xl font-bold">
-                  {quizzes.filter((q) => q.score === null).length}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-100">
-                <Notebook className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full bg-transparent">
-                View Quizzes
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+//     load();
+//   }, []);
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Session Scores */}
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-indigo-600" />
-                Recent Session Scores
-              </CardTitle>
-              <CardDescription>
-                Your performance in the last 4 sessions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    <TableHead className="w-[60%]">Session</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Score</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {scores.map((s, index) => {
-                    const scoreNum = Number.parseInt(s.score.split("/")[0]);
-                    const percentage = (scoreNum / 100) * 100;
+//   const filteredSessions = useMemo(() => {
+//     if (!data?.sessions) return [];
+//     const q = filter.query.trim().toLowerCase();
+//     return data.sessions.filter((s) => {
+//       if (filter.attendance !== "all") {
+//         if (
+//           filter.attendance === "present" &&
+//           s.attendance_status !== "Present"
+//         )
+//           return false;
+//         if (filter.attendance === "absent" && s.attendance_status !== "Absent")
+//           return false;
+//       }
+//       if (!q) return true;
+//       return (
+//         s.title.toLowerCase().includes(q) ||
+//         (s.teacher_name || "").toLowerCase().includes(q) ||
+//         (s.center_name || "").toLowerCase().includes(q)
+//       );
+//     });
+//   }, [data, filter]);
 
-                    return (
-                      <TableRow
-                        key={index}
-                        className="border-b hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`p-2 rounded-lg ${
-                                percentage >= 90
-                                  ? "bg-green-100 text-green-800"
-                                  : percentage >= 80
-                                  ? "bg-blue-100 text-blue-800"
-                                  : percentage >= 70
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}>
-                              <BookOpen className="h-5 w-5" />
-                            </div>
-                            <span>{s.session_title}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gray-600">
-                          {s.date}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end">
-                            <Badge
-                              className={`font-medium ${
-                                percentage >= 90
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : percentage >= 80
-                                  ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                                  : percentage >= 70
-                                  ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                                  : "bg-red-100 text-red-800 hover:bg-red-100"
-                              }`}>
-                              {s.score}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="py-3 bg-gray-50">
-              <Button
-                variant="ghost"
-                className="text-indigo-600 flex items-center ml-auto">
-                View all sessions <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
-          </Card>
+//   const handleExport = () => {
+//     if (!data) return;
+//     const rows = data.sessions.map((s) => ({
+//       id: s.id,
+//       date: s.date,
+//       title: s.title,
+//       teacher: s.teacher_name || "",
+//       center: s.center_name || "",
+//       attendance: s.attendance_status || "",
+//       homework: s.homework
+//         ? s.homework.completed
+//           ? "Completed"
+//           : "Not Completed"
+//         : "No homework",
+//       test_score: s.test_score
+//         ? `${s.test_score.score}/${s.test_score.max_score}`
+//         : s.has_test
+//         ? "No score yet"
+//         : "No test",
+//     }));
+//     downloadCSV(rows, "my-sessions.csv");
+//   };
 
-          {/* Study Materials */}
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <BookText className="h-5 w-5 text-indigo-600" />
-                Study Materials
-              </CardTitle>
-              <CardDescription>
-                Recently published study materials
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
-                {weeks.map((w) => (
-                  <div
-                    key={w.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-indigo-100 rounded-lg">
-                        <BookOpen className="h-5 w-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{w.title}</h4>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Published: {w.date_created}
-                        </p>
-                        <div className="mt-3 flex gap-2">
-                          <Button variant="outline" size="sm">
-                            View Materials
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter className="py-3 bg-gray-50">
-              <Button
-                variant="ghost"
-                className="text-indigo-600 flex items-center ml-auto">
-                Browse all materials <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+//   return (
+//     <div className="min-h-screen bg-gray-50 flex flex-col">
+//       {/* Navbar */}
+//       <nav className="bg-gradient-to-b from-indigo-600 to-indigo-700 text-white px-6 py-4 shadow-md sticky top-0 z-30">
+//         <div className="max-w-6xl mx-auto flex items-center justify-between">
+//           <div className="flex items-center gap-3">
+//             <div className="text-2xl font-handwriting">🎓</div>
+//             <div className="font-bold text-xl">EduTrack</div>
+//           </div>
+//           <div className="hidden md:flex items-center gap-6">
+//             <a className="hover:underline" href="#">
+//               Dashboard
+//             </a>
+//             <a className="hover:underline" href="#">
+//               Courses
+//             </a>
+//             <a className="underline font-medium" href="#">
+//               Sessions
+//             </a>
+//             <a className="hover:underline" href="#">
+//               Assignments
+//             </a>
+//             <a className="hover:underline" href="#">
+//               Performance
+//             </a>
+//           </div>
+//           <div className="flex items-center gap-3">
+//             <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">
+//               JS
+//             </div>
+//             <div className="hidden sm:block">John Student</div>
+//           </div>
+//         </div>
+//       </nav>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Profile Card */}
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-indigo-600" />
-                Student Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="flex flex-col items-center text-center">
-                <div className="relative mb-4">
-                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <User className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <Badge className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-indigo-600 hover:bg-indigo-700">
-                    {profile.student_id}
-                  </Badge>
-                </div>
-                <h3 className="font-bold text-lg">{profile.full_name}</h3>
-                <p className="text-gray-600 mt-1">@{profile.username}</p>
-              </div>
+//       <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-1">
+//         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+//           <div>
+//             <h1 className="text-2xl font-semibold">My Learning Sessions</h1>
+//             <p className="text-sm text-gray-500 mt-1">
+//               View your class attendance, homework status, and test scores
+//             </p>
+//           </div>
 
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center gap-3">
-                  <GraduationCap className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  <div>
-                    <p className="text-gray-500 text-sm">Grade</p>
-                    <p className="font-medium">{profile.grade.name}</p>
-                  </div>
-                </div>
+//           <div className="flex items-center gap-2">
+//             <input
+//               value={filter.query}
+//               onChange={(e) =>
+//                 setFilter((p) => ({ ...p, query: e.target.value }))
+//               }
+//               className="px-3 py-2 border rounded-md text-sm w-48"
+//               placeholder="Search sessions, teacher, center..."
+//             />
 
-                <div className="flex items-center gap-3">
-                  <School className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  <div>
-                    <p className="text-gray-500 text-sm">Center</p>
-                    <p className="font-medium">{profile.center.name}</p>
-                  </div>
-                </div>
+//             <select
+//               value={filter.attendance}
+//               onChange={(e) =>
+//                 setFilter((p) => ({ ...p, attendance: e.target.value }))
+//               }
+//               className="px-3 py-2 border rounded-md text-sm">
+//               <option value="all">All</option>
+//               <option value="present">Present</option>
+//               <option value="absent">Absent</option>
+//             </select>
 
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  <div>
-                    <p className="text-gray-500 text-sm">Teacher</p>
-                    <p className="font-medium">{profile.teacher.full_name}</p>
-                  </div>
-                </div>
+//             <button
+//               onClick={handleExport}
+//               className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm">
+//               Export CSV
+//             </button>
+//           </div>
+//         </header>
 
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  <div>
-                    <p className="text-gray-500 text-sm">Phone</p>
-                    <p className="font-medium">{profile.phone_number}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="py-3 bg-gray-50">
-              <Button variant="outline" className="w-full bg-transparent">
-                Edit Profile
-              </Button>
-            </CardFooter>
-          </Card>
+//         {/* Stats */}
+//         <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+//           <div className="bg-white p-4 rounded-xl shadow-sm border">
+//             <div className="flex justify-between items-start">
+//               <div>
+//                 <div className="text-xs text-gray-500">TOTAL SESSIONS</div>
+//                 <div className="text-2xl font-bold">
+//                   {data ? data.stats.total_sessions_number : "--"}
+//                 </div>
+//               </div>
+//               <div className="bg-indigo-50 text-indigo-600 p-2 rounded-md">
+//                 📅
+//               </div>
+//             </div>
+//             <div className="text-sm text-green-600 mt-2">
+//               {data ? `${data.stats.average_attendance}% attendance` : ""}
+//             </div>
+//           </div>
 
-          {/* Quizzes Card */}
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Notebook className="h-5 w-5 text-indigo-600" />
-                Online Quizzes
-              </CardTitle>
-              <CardDescription>
-                Recent quiz attempts and results
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {quizzes.map((q) => (
-                  <div
-                    key={q.id}
-                    className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{q.title}</p>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <BookOpen className="h-4 w-4 mr-1.5" />
-                          <span>Online Quiz</span>
-                        </div>
-                      </div>
+//           <div className="bg-white p-4 rounded-xl shadow-sm border">
+//             <div className="flex justify-between items-start">
+//               <div>
+//                 <div className="text-xs text-gray-500">ATTENDED</div>
+//                 <div className="text-2xl font-bold">
+//                   {data ? data.stats.total_sessions_attended : "--"}
+//                 </div>
+//               </div>
+//               <div className="bg-green-50 text-green-600 p-2 rounded-md">
+//                 ✔️
+//               </div>
+//             </div>
+//           </div>
 
-                      <div>
-                        {q.score ? (
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                            {q.score}
-                          </Badge>
-                        ) : (
-                          <Button size="sm">Take Quiz</Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter className="py-3 bg-gray-50">
-              <Button
-                variant="ghost"
-                className="text-indigo-600 flex items-center ml-auto">
-                View all quizzes <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+//           <div className="bg-white p-4 rounded-xl shadow-sm border">
+//             <div className="flex justify-between items-start">
+//               <div>
+//                 <div className="text-xs text-gray-500">ABSENT</div>
+//                 <div className="text-2xl font-bold">
+//                   {data ? data.stats.total_absent : "--"}
+//                 </div>
+//               </div>
+//               <div className="bg-red-50 text-red-600 p-2 rounded-md">❌</div>
+//             </div>
+//           </div>
+
+//           <div className="bg-white p-4 rounded-xl shadow-sm border">
+//             <div className="flex justify-between items-start">
+//               <div>
+//                 <div className="text-xs text-gray-500">AVERAGE GRADE</div>
+//                 <div className="text-2xl font-bold">
+//                   {data
+//                     ? `${Math.round(data.stats.average_attendance)}%`
+//                     : "--"}
+//                 </div>
+//               </div>
+//               <div className="bg-yellow-50 text-yellow-600 p-2 rounded-md">
+//                 ⭐
+//               </div>
+//             </div>
+//           </div>
+//         </section>
+
+//         {/* Table container */}
+//         <section className="bg-white rounded-xl shadow-sm border overflow-hidden">
+//           <div className="flex items-center justify-between px-6 py-4 border-b">
+//             <div className="font-semibold">Recent Sessions</div>
+//             <div>
+//               <button
+//                 className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm"
+//                 onClick={() =>
+//                   alert("New Session flow would open in a full app")
+//                 }>
+//                 + New Session
+//               </button>
+//             </div>
+//           </div>
+
+//           <div className="overflow-x-auto">
+//             <table className="w-full min-w-[800px] table-auto">
+//               <thead className="bg-gray-50 text-left text-sm text-gray-600">
+//                 <tr>
+//                   <th className="px-6 py-3">Date</th>
+//                   <th className="px-6 py-3">Session</th>
+//                   <th className="px-6 py-3">Attendance</th>
+//                   <th className="px-6 py-3">Homework</th>
+//                   <th className="px-6 py-3">Test Score</th>
+//                   <th className="px-6 py-3">Actions</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {loading && (
+//                   <tr>
+//                     <td colSpan={6} className="p-8 text-center">
+//                       <div className="inline-block animate-spin border-4 border-indigo-200 border-t-indigo-600 rounded-full w-10 h-10" />
+//                     </td>
+//                   </tr>
+//                 )}
+
+//                 {!loading && error && (
+//                   <tr>
+//                     <td colSpan={6} className="p-8 text-center text-red-600">
+//                       {error}
+//                     </td>
+//                   </tr>
+//                 )}
+
+//                 {!loading && !error && filteredSessions.length === 0 && (
+//                   <tr>
+//                     <td colSpan={6} className="p-10 text-center">
+//                       <div className="mb-3 text-2xl">📭</div>
+//                       <div className="font-semibold">No Sessions Found</div>
+//                       <p className="text-sm text-gray-500 mt-2">
+//                         You don't have any sessions recorded yet. Check back
+//                         later or contact your teacher.
+//                       </p>
+//                       <div className="mt-4">
+//                         <button
+//                           onClick={() => window.location.reload()}
+//                           className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm">
+//                           Refresh
+//                         </button>
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 )}
+
+//                 {!loading &&
+//                   !error &&
+//                   filteredSessions.map((s) => (
+//                     <tr key={s.id} className="hover:bg-gray-50">
+//                       <td className="px-6 py-4 align-top">
+//                         <div className="font-semibold">
+//                           {formatDate(s.date)}
+//                         </div>
+//                         <div className="text-xs text-gray-500 mt-1">
+//                           10:00 AM
+//                         </div>
+//                       </td>
+
+//                       <td className="px-6 py-4 align-top">
+//                         <div className="font-semibold">{s.title}</div>
+//                         <div className="text-sm text-gray-500 mt-1 flex gap-3">
+//                           <span className="flex items-center gap-2">
+//                             👩‍🏫 {s.teacher_name}
+//                           </span>
+//                           <span className="flex items-center gap-2">
+//                             🏫 {s.center_name}
+//                           </span>
+//                         </div>
+//                       </td>
+
+//                       <td className="px-6 py-4 align-top">
+//                         {s.attendance_status === "Present" ? (
+//                           <span className="inline-flex items-center px-3 py-1 rounded-full text-green-700 bg-green-50 text-sm">
+//                             ✔ Present
+//                           </span>
+//                         ) : s.attendance_status === "Absent" ? (
+//                           <span className="inline-flex items-center px-3 py-1 rounded-full text-red-700 bg-red-50 text-sm">
+//                             ✖ Absent
+//                           </span>
+//                         ) : (
+//                           <span className="inline-flex items-center px-3 py-1 rounded-full text-yellow-700 bg-yellow-50 text-sm">
+//                             ? Pending
+//                           </span>
+//                         )}
+//                       </td>
+
+//                       <td className="px-6 py-4 align-top">
+//                         {s.homework ? (
+//                           s.homework.completed ? (
+//                             <span className="text-green-600 font-medium">
+//                               Completed
+//                             </span>
+//                           ) : (
+//                             <span className="text-red-600 font-medium">
+//                               Not Completed
+//                             </span>
+//                           )
+//                         ) : (
+//                           <span className="text-gray-500">No homework</span>
+//                         )}
+//                       </td>
+
+//                       <td className="px-6 py-4 align-top">
+//                         {s.test_score ? (
+//                           <div className="font-medium">
+//                             {s.test_score.score}/{s.test_score.max_score}
+//                           </div>
+//                         ) : s.has_test ? (
+//                           <span className="text-gray-500">No score yet</span>
+//                         ) : (
+//                           <span className="text-gray-500">No test</span>
+//                         )}
+//                       </td>
+
+//                       <td className="px-6 py-4 align-top">
+//                         <div className="flex items-center gap-2">
+//                           <button
+//                             onClick={() => setSelected(s)}
+//                             className="px-2 py-1 border rounded text-sm"
+//                             aria-label={`View session ${s.title}`}>
+//                             View
+//                           </button>
+//                           <button
+//                             onClick={() =>
+//                               alert(
+//                                 "Download materials (not implemented in demo)"
+//                               )
+//                             }
+//                             className="px-2 py-1 border rounded text-sm"
+//                             aria-label={`Download materials for ${s.title}`}>
+//                             Materials
+//                           </button>
+//                         </div>
+//                       </td>
+//                     </tr>
+//                   ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         </section>
+//       </main>
+
+//       <footer className="bg-white border-t py-4 text-center text-sm text-gray-500">
+//         © 2023 EduTrack Learning System. All rights reserved.
+//       </footer>
+
+//       {/* Modal */}
+//       {selected && (
+//         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+//           <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+//             <div className="flex justify-between items-start">
+//               <div>
+//                 <h3 className="text-lg font-semibold">{selected.title}</h3>
+//                 <div className="text-sm text-gray-500">
+//                   {formatDate(selected.date)}
+//                 </div>
+//               </div>
+//               <button
+//                 className="text-gray-500"
+//                 onClick={() => setSelected(null)}>
+//                 ✖
+//               </button>
+//             </div>
+
+//             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+//               <div>
+//                 <h4 className="text-sm font-medium">Teacher</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.teacher_name}
+//                 </div>
+
+//                 <h4 className="mt-3 text-sm font-medium">Center</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.center_name}
+//                 </div>
+
+//                 <h4 className="mt-3 text-sm font-medium">Notes</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.notes || "—"}
+//                 </div>
+//               </div>
+
+//               <div>
+//                 <h4 className="text-sm font-medium">Attendance</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.attendance_status}
+//                 </div>
+
+//                 <h4 className="mt-3 text-sm font-medium">Homework</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.homework
+//                     ? selected.homework.completed
+//                       ? `Completed — ${selected.homework.notes || ""}`
+//                       : `Not completed — ${selected.homework.notes || ""}`
+//                     : "No homework"}
+//                 </div>
+
+//                 <h4 className="mt-3 text-sm font-medium">Test Score</h4>
+//                 <div className="text-sm text-gray-700">
+//                   {selected.test_score
+//                     ? `${selected.test_score.score}/${selected.test_score.max_score} — ${selected.test_score.percentage}%`
+//                     : selected.has_test
+//                     ? "No score yet"
+//                     : "No test"}
+//                 </div>
+//               </div>
+//             </div>
+
+//             <div className="mt-6 flex justify-end">
+//               <button
+//                 onClick={() => setSelected(null)}
+//                 className="px-4 py-2 bg-gray-100 rounded mr-2">
+//                 Close
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }

@@ -75,7 +75,7 @@ async function handleRefresh(
   secret: Uint8Array
 ) {
   try {
-    const refreshRes = await fetch(`${DJANGO_BASE}/accounts/refresh/`, {
+    const refreshRes = await fetch(`${DJANGO_BASE}accounts/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: token }),

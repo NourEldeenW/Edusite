@@ -1,15 +1,15 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
-import Main from "./studymatComps/main";
+import Main from "./_sessionscomps/main";
 
 export const metadata: Metadata = {
-  title: "EduTrack | Study Materials",
+  title: "EduTrack | Sessions",
   description:
-    "This page is for students to access the study materials uploaded by teachers and assistants.",
+    "This page is for students to view their sessions and attendance.",
 };
 
-export default async function studyMat() {
+export default async function stuSessions() {
   const headerData = await headers();
   const role = headerData.get("x-user-role");
   if (role !== "student") return redirect(`/${role}/dashboard`);

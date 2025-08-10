@@ -395,7 +395,7 @@ export default function StudentDashboard({ access }: { access: string }) {
                   fgColor="#1f2937"
                 />
                 <h3 className="font-bold text-lg mt-4">{profile.full_name}</h3>
-                <p className="text-gray-600 mt-1">@{profile.username}</p>
+                <p className="text-gray-600 mt-1">{profile.username}</p>
               </div>
 
               <div className="mt-6 space-y-4">

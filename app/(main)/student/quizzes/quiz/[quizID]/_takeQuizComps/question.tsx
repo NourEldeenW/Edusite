@@ -147,13 +147,12 @@ export default function Question() {
             className="w-full sm:w-auto px-6 py-2.5 font-semibold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors">
             Previous
           </button>
-          {!isLastQuestion && (
-            <button
-              onClick={() => goToNextQuestion}
-              className="w-full sm:w-auto px-8 py-2.5 font-semibold rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500">
-              Next Question
-            </button>
-          )}
+          <button
+            disabled={isLastQuestion}
+            onClick={goToNextQuestion}
+            className="w-full sm:w-auto px-8 py-2.5 font-semibold rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+            Next Question
+          </button>
         </div>
       </div>
     </div>

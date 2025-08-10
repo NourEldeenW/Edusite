@@ -52,7 +52,13 @@ const initialFormData = {
   has_test: false,
 };
 
-export default function AddSessionForm({ access }: { access: string }) {
+export default function AddSessionForm({
+  access,
+  onSuccess,
+}: {
+  access: string;
+  onSuccess?: () => void;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -188,6 +194,7 @@ export default function AddSessionForm({ access }: { access: string }) {
         { headers: { Authorization: `Bearer ${access}` } }
       );
       addSession(res.data);
+      if (onSuccess) onSuccess();
       showToast("Session created successfully", "success");
       setDialogOpen(false);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

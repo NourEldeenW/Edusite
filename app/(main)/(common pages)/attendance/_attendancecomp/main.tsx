@@ -426,6 +426,30 @@ export default function AttendanceManagementPage({
     setMainView("SESSIONDETAILS_TAB");
   }, [preventNavigation]);
 
+  // Fetch all sessions helper (used after adding a session and elsewhere)
+  const fetchAllSessions = useCallback(async (): Promise<SessionType[]> => {
+    try {
+      const res = await api.get(`${djangoApi}session/sessions/`, {
+        headers: { Authorization: `Bearer ${access}` },
+      });
+
+      // Update sessions state
+      setSessions(res.data || []);
+
+      // Refresh cache
+      sessionCache.current.clear();
+      (res.data || []).forEach((session: SessionType) =>
+        sessionCache.current.set(session.id, session)
+      );
+
+      return res.data || [];
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      showToast("Failed to load sessions", "error");
+      return [];
+    }
+  }, [access]);
+
   // Fetch initial data (sessions, grades, centers)
   useEffect(() => {
     if (initialDataFetched.current) return;
@@ -455,6 +479,7 @@ export default function AttendanceManagementPage({
         setAvailCenters(centersRes.data);
 
         // Cache sessions
+        sessionCache.current.clear();
         sessionsRes.data.forEach((session: SessionType) => {
           sessionCache.current.set(session.id, session);
         });
@@ -530,7 +555,9 @@ export default function AttendanceManagementPage({
       try {
         const res = await api.get(
           `${djangoApi}session/sessions/${sessionId}/`,
-          { headers: { Authorization: `Bearer ${access}` } }
+          {
+            headers: { Authorization: `Bearer ${access}` },
+          }
         );
 
         // Update cache and state
@@ -554,7 +581,9 @@ export default function AttendanceManagementPage({
       try {
         const res = await api.get(
           `${djangoApi}session/sessions/${sessionId}/`,
-          { headers: { Authorization: `Bearer ${access}` } }
+          {
+            headers: { Authorization: `Bearer ${access}` },
+          }
         );
 
         // Update cache and state
@@ -609,6 +638,8 @@ export default function AttendanceManagementPage({
             selectedSessionDetails={selectedSessionDetails}
             navigateToTakingAttendance={navigateToTakingAttendance}
             access={access}
+            // pass fetchAllSessions so SessionDetailsView can call it after adding a session
+            fetchAllSessions={fetchAllSessions}
           />
         ) : (
           <TakingAttendanceView
@@ -647,6 +678,7 @@ const SessionDetailsView = ({
   selectedSessionDetails,
   navigateToTakingAttendance,
   access,
+  fetchAllSessions, // <- new prop
 }: {
   availGrades: GradeType[];
   availCenters: GradeType[];
@@ -665,6 +697,7 @@ const SessionDetailsView = ({
   selectedSessionDetails: SessionType | null | undefined;
   navigateToTakingAttendance: () => void;
   access: string;
+  fetchAllSessions: () => Promise<SessionType[]>;
 }) => (
   <div className="flex flex-col h-full">
     <div className="flex flex-col justify-between gap-4 mb-6 md:flex-row md:items-center">
@@ -676,7 +709,41 @@ const SessionDetailsView = ({
           Manage and track student attendance for sessions
         </p>
       </div>
-      <AddSessionForm access={access}></AddSessionForm>
+      <AddSessionForm
+        access={access}
+        onSuccess={async (createdSession?: SessionType | number) => {
+          // Refresh sessions list
+          const updatedSessions = await fetchAllSessions();
+
+          // If AddSessionForm returned the created session object or id, auto-select it:
+          let newId: number | null = null;
+
+          if (createdSession) {
+            if (typeof createdSession === "number") {
+              newId = createdSession;
+            } else if (
+              typeof createdSession === "object" &&
+              "id" in createdSession
+            ) {
+              newId = (createdSession as SessionType).id;
+            }
+          }
+
+          if (newId) {
+            const created = (updatedSessions || []).find((s) => s.id === newId);
+            if (created) {
+              // set filters to match created session and select it
+              setSelectedGrade(created.grade.id);
+              setSelectedCenter(created.center.id);
+              setSelectedSessionId(created.id);
+              return;
+            }
+          }
+
+          // Do NOT clear the user's filters — keep current grade/center selection.
+          // If you want to auto-select the newly added session when AddSessionForm does NOT
+          // return an id/object, you'd need AddSessionForm to return the created id.
+        }}></AddSessionForm>
     </div>
 
     {/* Three-column filter section */}

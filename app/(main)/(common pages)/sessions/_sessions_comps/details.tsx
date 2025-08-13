@@ -50,7 +50,7 @@ interface SessionStats {
 interface TestScore {
   id: number;
   student: { id: number; full_name: string };
-  score: string;
+  score: string | null;
   max_score: string;
   percentage: number;
   notes: string;
@@ -182,7 +182,7 @@ export default function SessionDetails({
   const handleEditScore = (score: TestScore) => {
     setEditingScoreId(score.id);
     setEditableScore({
-      score: score.score,
+      score: score.score ?? "no score",
       notes: score.notes,
     });
   };
@@ -281,13 +281,15 @@ export default function SessionDetails({
           ? {
               id: existingScore.id,
               student_id,
-              score: parseFloat(existingScore.score),
+              score: existingScore.score
+                ? parseFloat(existingScore.score)
+                : null,
               max_score: maxScore,
               notes: existingScore.notes,
             }
           : {
               student_id,
-              score: 0,
+              score: null,
               max_score: maxScore,
               notes: "",
             };
@@ -1010,8 +1012,8 @@ export default function SessionDetails({
                                     {score.student.full_name}
                                   </td>
                                   <td className="py-4 px-6">
-                                    {score.score}/{score.max_score} (
-                                    {score.percentage}%)
+                                    {score.score ?? "no score"}/
+                                    {score.max_score} ({score.percentage}%)
                                   </td>
                                   <td className="py-4 px-6 text-gray-500">
                                     {score.notes || "-"}

@@ -232,7 +232,7 @@ export default function Navbar({ links, logo }: NavbarProps) {
             </li>
 
             {/* Navigation Links */}
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2 overflow-y-auto max-h-fill overflow-x-clip no-scrollbar">
               {links.map((l, index) => (
                 <li
                   key={l.key}
@@ -369,7 +369,7 @@ export default function Navbar({ links, logo }: NavbarProps) {
               </li>
 
               {/* Mobile Links */}
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-3 overflow-y-auto max-h-fill">
                 {links.map((l, index) => (
                   <li
                     key={l.key}

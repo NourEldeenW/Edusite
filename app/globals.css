@@ -232,3 +232,17 @@ video {
     -1
   ); /* Flip the video back to normal within the container */
 }
+
+@layer utilities {
+  /* Chrome, Safari, Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Firefox */
+  .no-scrollbar {
+    scrollbar-width: none;
+    /* IE and legacy Edge */
+    -ms-overflow-style: none;
+  }
+}

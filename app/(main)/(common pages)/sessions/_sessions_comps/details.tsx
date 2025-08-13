@@ -32,6 +32,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import EditHis from "./editHIstory";
 
 interface SessionStats {
   session_id: number;
@@ -66,10 +67,12 @@ export default function SessionDetails({
   selected_session,
   access,
   navigateBack,
+  role,
 }: {
   selected_session: SessionType | null;
   access: string;
   navigateBack: () => void;
+  role: string;
 }) {
   const allStudents = useAvail_Grades_CentersStore(
     (state) => state.allStudents
@@ -88,6 +91,7 @@ export default function SessionDetails({
   const [isCreatingScores, setIsCreatingScores] = useState(false);
   const [editingScoreId, setEditingScoreId] = useState<number | null>(null);
   const [savingScoreId, setSavingScoreId] = useState<number | null>(null);
+  const [refCount, setRefCount] = useState(0);
   const [editableScore, setEditableScore] = useState<{
     score: string;
     notes: string;
@@ -220,7 +224,7 @@ export default function SessionDetails({
           [payload],
           { headers: { Authorization: `Bearer ${access}` } }
         );
-        updatedScore = response.data.results[0];
+        updatedScore = response.data.success[0];
       } else {
         // Update existing score
         const response = await api.put(
@@ -249,6 +253,7 @@ export default function SessionDetails({
       console.error("Failed to save score:", error);
     } finally {
       setSavingScoreId(null);
+      setRefCount((prev) => prev + 1);
     }
   };
 
@@ -762,6 +767,13 @@ export default function SessionDetails({
                 </table>
               </div>
             </div>
+            {role === "teacher" && selected_session.has_test && (
+              <EditHis
+                sID={selected_session.id}
+                access={access}
+                refCount={refCount}
+              />
+            )}
           </div>
 
           {/* Right Column: Test and Homework */}

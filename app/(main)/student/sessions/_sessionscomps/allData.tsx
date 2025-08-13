@@ -28,7 +28,6 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 /** ----- Types ----- **/
 type AttendanceStatus = "Present" | "Absent" | string;
@@ -425,23 +424,9 @@ export default function AllData() {
                           // only show the progress UI when we actually have a test_score object
                           session.test_score ? (
                             <div className="flex items-center">
-                              <div className="w-12 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mr-3">
-                                <div
-                                  className={cn(
-                                    "h-full rounded-full",
-                                    (session.test_score.percentage ?? 0) > 0.7
-                                      ? "bg-green-500"
-                                      : (session.test_score.percentage ?? 0) >
-                                        0.5
-                                      ? "bg-yellow-500"
-                                      : "bg-rose-500"
-                                  )}
-                                  style={{
-                                    width: `${
-                                      (session.test_score.percentage ?? 0) * 100
-                                    }%`,
-                                  }}
-                                />
+                              <div className=" mr-3">
+                                ({session.test_score.percentage}
+                                {" %"})
                               </div>
                               <span className="font-medium text-gray-800 dark:text-gray-200">
                                 {session.test_score.score} /{" "}

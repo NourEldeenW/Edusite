@@ -46,7 +46,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 type currentViewType = "main" | "sessionDetails";
 
-export default function Main({ access }: { access: string }) {
+export default function Main({
+  access,
+  role,
+}: {
+  access: string;
+  role: string;
+}) {
   const [currentView, setCurrentView] = useState<currentViewType>("main");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterGradesOpen, setIsFilterGradesOpen] = useState(false);
@@ -679,6 +685,7 @@ export default function Main({ access }: { access: string }) {
           selected_session={sId}
           access={access}
           navigateBack={navigateBack}
+          role={role}
         />
       )}
     </>

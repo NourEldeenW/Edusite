@@ -35,19 +35,19 @@ const links = {
     },
   ],
   teacher: [
-    {
-      href: "/teacher/dashboard",
-      key: "dashboard",
-      name: "Dashboard",
-      icon: (
-        <LayoutDashboard
-          color="#ffff"
-          className="w-[22px] h-[22px]"
-          strokeWidth={2}
-          fill="#ffff"
-        />
-      ),
-    },
+    // {
+    //   href: "/teacher/dashboard",
+    //   key: "dashboard",
+    //   name: "Dashboard",
+    //   icon: (
+    //     <LayoutDashboard
+    //       color="#ffff"
+    //       className="w-[22px] h-[22px]"
+    //       strokeWidth={2}
+    //       fill="#ffff"
+    //     />
+    //   ),
+    // },
     {
       href: "/students",
       key: "students",

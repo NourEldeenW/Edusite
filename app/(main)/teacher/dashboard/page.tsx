@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "EduTrack | Students",
+  title: "EduTrack | Dashboard",
   description:
-    "The Students' Page to Manage and Controle all Students' Accounts and Data.",
+    "The dashboard page to manage and view your educational content.",
 };
 
 export default async function page() {
@@ -13,9 +13,12 @@ export default async function page() {
   const role = headerData.get("x-user-role");
   if (role != "teacher" && role != "assistant")
     return redirect(`/${role}/dashboard`);
-  const acces = headerData.get("access");
-  if (!acces) redirect("/login");
-  const acc_name = headerData.get("username");
+  else {
+    return redirect(`/students`);
+  }
 
-  return <h1>Hello {acc_name}, welcome to your dashboard</h1>;
+  // const acces = headerData.get("access");
+  // if (!acces) redirect("/login");
+  // const acc_name = headerData.get("username");
+  // return <h1>Hello {acc_name}, welcome to your dashboard</h1>;
 }

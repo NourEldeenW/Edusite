@@ -20,7 +20,7 @@ export default async function MainPage() {
 
   return (
     <>
-      <Main access={access} />
+      <Main access={access} role={role} />
     </>
   );
 }

@@ -9,6 +9,7 @@ import {
   faSchoolCircleCheck,
   faBuildingUser,
   faFilePen,
+  faListCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { LayoutDashboard } from "lucide-react";
@@ -120,6 +121,18 @@ const links = {
         />
       ),
     },
+    {
+      href: "/tasks",
+      key: "tasks",
+      name: "Online Tasks",
+      icon: (
+        <FontAwesomeIcon
+          icon={faListCheck}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
   ],
   assistant: [
     {
@@ -177,6 +190,18 @@ const links = {
       icon: (
         <FontAwesomeIcon
           icon={faFilePen}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
+    {
+      href: "/tasks",
+      key: "tasks",
+      name: "Online Tasks",
+      icon: (
+        <FontAwesomeIcon
+          icon={faListCheck}
           color="#ffff"
           className="w-[22px] h-[22px]"
         />

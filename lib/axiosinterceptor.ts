@@ -142,23 +142,4 @@ export function setAccessToken(token: string) {
   accessToken = token;
 }
 
-// Create a separate instance for Django API calls if needed
-export const djangoApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_DJANGO_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  withCredentials: false, // No credentials for Django
-});
-
-// Add interceptor for Django API to handle auth
-djangoApi.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+export const djangoApi = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;

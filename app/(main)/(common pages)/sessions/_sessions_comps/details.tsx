@@ -731,7 +731,9 @@ export default function SessionDetails({
                             </td>
                             <td className="py-3 px-2">
                               {studentScore ? (
-                                `${studentScore.score}/${studentScore.max_score}`
+                                `${studentScore.score ?? "no score "}/${
+                                  studentScore.max_score
+                                }`
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
@@ -1012,7 +1014,7 @@ export default function SessionDetails({
                                     {score.student.full_name}
                                   </td>
                                   <td className="py-4 px-6">
-                                    {score.score ?? "no score"}/
+                                    {score.score ?? "no score "}/
                                     {score.max_score} ({score.percentage}%)
                                   </td>
                                   <td className="py-4 px-6 text-gray-500">

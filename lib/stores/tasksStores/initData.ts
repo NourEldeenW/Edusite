@@ -1,18 +1,16 @@
 import { create } from "zustand";
 import { GradeType } from "../student/quizzes/takeQuiz";
 
-interface task {
+interface Task {
   id: number;
   title: string;
   details: string;
   grade_name: string;
-  centers: [
-    {
-      center: GradeType;
-      open_date: string;
-      close_date: string;
-    }
-  ];
+  centers: {
+    center: GradeType;
+    open_date: string;
+    close_date: string;
+  }[];
   task_content_type: "pdf" | "text";
   submission_policy: "single" | "editable";
   submission_type: "pdf" | "text" | "both";
@@ -20,19 +18,19 @@ interface task {
   created_at: string;
 }
 
-interface stateType {
-  allTasks: task[];
+interface StateType {
+  allTasks: Task[];
   availGrades: GradeType[];
   availCenters: GradeType[];
 
-  setAllTasks: (tasks: task[]) => void;
+  setAllTasks: (tasks: Task[]) => void;
   setAvailGrades: (grades: GradeType[]) => void;
   setAvailCenters: (centers: GradeType[]) => void;
-  addTask: (task: task) => void;
+  addTask: (task: Task) => void;
   deleteTask: (id: number) => void;
 }
 
-const useTaskStore = create<stateType>((set) => ({
+const useTaskStore = create<StateType>((set) => ({
   allTasks: [],
   availGrades: [],
   availCenters: [],
@@ -40,10 +38,15 @@ const useTaskStore = create<stateType>((set) => ({
   setAllTasks: (tasks) => set({ allTasks: tasks }),
   setAvailGrades: (grades) => set({ availGrades: grades }),
   setAvailCenters: (centers) => set({ availCenters: centers }),
-  addTask: (task) => set((state) => ({ allTasks: [...state.allTasks, task] })),
+
+  addTask: (task) =>
+    set((state) => ({
+      allTasks: [task, ...state.allTasks],
+    })),
+
   deleteTask: (id) =>
     set((state) => ({
-      allTasks: state.allTasks.filter((task) => task.id !== id),
+      allTasks: state.allTasks.filter((t) => t.id !== id),
     })),
 }));
 

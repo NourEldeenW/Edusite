@@ -3,14 +3,16 @@
 import { api, djangoApi } from "@/lib/axiosinterceptor";
 import useTaskStore from "@/lib/stores/tasksStores/initData";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TDashboard from "./tDashboard";
+import TDashboardSkeleton from "./_tDashboardcomps/dashSkeleton";
 
 interface props {
   access: string;
 }
 
 export default function TasksPage({ access }: props) {
+  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const { setAllTasks, setAvailGrades, setAvailCenters } = useTaskStore();
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function TasksPage({ access }: props) {
         setAllTasks(tasks_res.data);
         setAvailGrades(grades_res.data);
         setAvailCenters(centers_res.data);
+        setLoading(false);
       } catch {}
     };
     fetchData();
@@ -41,8 +44,10 @@ export default function TasksPage({ access }: props) {
 
   switch (view) {
     case "dashboard":
-      return <TDashboard />;
+      if (loading) return <TDashboardSkeleton />;
+      return <TDashboard access={access} />;
     default:
-      return <TDashboard />;
+      if (loading) return <TDashboardSkeleton />;
+      return <TDashboard access={access} />;
   }
 }

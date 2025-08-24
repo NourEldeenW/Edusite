@@ -78,11 +78,13 @@ export default function MaterialEditForm({
       try {
         const formData = new FormData();
         formData.append("title", title);
-        formData.append("material_type", material.material_type);
 
         switch (material.material_type) {
           case "pdf":
-            if (file) formData.append("file", file);
+            if (file) {
+              formData.append("material_type", material.material_type);
+              formData.append("file", file);
+            }
             break;
           case "text":
             if (!textContent.trim()) {
@@ -90,6 +92,7 @@ export default function MaterialEditForm({
               setIsSubmitting(false);
               return;
             }
+            formData.append("material_type", material.material_type);
             formData.append("text_content", textContent);
             break;
           case "link":

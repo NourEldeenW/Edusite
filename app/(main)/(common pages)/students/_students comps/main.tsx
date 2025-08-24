@@ -124,6 +124,7 @@ export default function StudentManagementPage({
 }: StudentManagementProps) {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false);
+  const [isCreatingStu, setIsCreatingStu] = useState(false);
   const [isAddCenterDialogOpen, setIsAddCenterDialogOpen] = useState(false);
   const [isGenderPopoverOpen, setIsGenderPopoverOpen] = useState(false);
   const [isGradePopoverOpen, setIsGradePopoverOpen] = useState(false);
@@ -182,8 +183,8 @@ export default function StudentManagementPage({
     } else if (newStudentForm.username.length < 4) {
       errors.username = "Username must be at least 4 characters";
       isValid = false;
-    } else if (newStudentForm.username.length > 20) {
-      errors.username = "Username cannot exceed 20 characters";
+    } else if (newStudentForm.username.length > 35) {
+      errors.username = "Username cannot exceed 35 characters";
       isValid = false;
     }
 
@@ -281,8 +282,10 @@ export default function StudentManagementPage({
 
   const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsCreatingStu(true);
 
     if (!validateForm()) {
+      setIsCreatingStu(false);
       return;
     }
 
@@ -325,6 +328,8 @@ export default function StudentManagementPage({
           : "Operation failed",
         "error"
       );
+    } finally {
+      setIsCreatingStu(false);
     }
   };
 
@@ -810,7 +815,7 @@ export default function StudentManagementPage({
                         id="username"
                         required
                         minLength={4}
-                        maxLength={20}
+                        maxLength={35}
                         className={`w-full px-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
                           formErrors.username
                             ? "border-error focus:ring-error/50"
@@ -834,7 +839,7 @@ export default function StudentManagementPage({
                       </div>
                     </div>
                     <p className="mt-1 text-xs text-text-secondary">
-                      Must be 4-20 characters
+                      Must be 4-35 characters
                     </p>
                     {formErrors.username && (
                       <p className="mt-1 text-xs text-error flex items-center">
@@ -943,8 +948,9 @@ export default function StudentManagementPage({
                   type="submit"
                   form="add-student-form"
                   variant="outline"
-                  className="bg-primary hover:bg-primary/90 text-text-inverse hover:text-text-inverse/90 active:scale-90">
-                  Create Account
+                  className="bg-primary hover:bg-primary/90 text-text-inverse hover:text-text-inverse/90 active:scale-90"
+                  disabled={isCreatingStu}>
+                  {isCreatingStu ? "Creating..." : "Create Account"}
                 </Button>
               </DialogFooter>
             </DialogContent>

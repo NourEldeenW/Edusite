@@ -687,13 +687,21 @@ export default function StudentManagementPage({
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto">
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-h-52 overflow-y-auto">
                         <Command>
                           <CommandInput
                             placeholder="Search grade..."
                             className="h-9"
                           />
-                          <CommandList>
+                          <CommandList
+                            onWheel={(e) => {
+                              // Prevent the event from bubbling up to parent elements
+                              e.stopPropagation();
+                            }}
+                            onTouchMove={(e) => {
+                              // Prevent the event from bubbling up to parent elements
+                              e.stopPropagation();
+                            }}>
                             {availableGrades.map((grade) => (
                               <CommandItem
                                 key={grade.id}

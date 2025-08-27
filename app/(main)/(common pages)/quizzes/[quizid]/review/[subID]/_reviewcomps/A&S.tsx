@@ -1,5 +1,6 @@
 import { CheckIcon, XIcon as XMarkIcon } from "lucide-react";
 import Image from "next/image";
+import ScrollButton from "./scrollButton";
 
 // Define interfaces for nested objects
 interface QuestionType {
@@ -130,12 +131,7 @@ export default function AnswersAndScores({ data }: AnswersAndScoresProps) {
       {(data.answers?.length ?? 0) > 0 && (
         <div className="question-nav mb-6 flex flex-wrap gap-2">
           {data.answers?.map((_, idx) => (
-            <a
-              key={idx}
-              href={`#question-${idx + 1}`}
-              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition">
-              Q{idx + 1}
-            </a>
+            <ScrollButton idx={idx} key={idx} />
           ))}
         </div>
       )}

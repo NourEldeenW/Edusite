@@ -1,0 +1,40 @@
+import { create } from "zustand";
+import { GradeType } from "../quizzes/takeQuiz";
+
+type submission_policy = "single";
+type availability_status = "Upcoming" | "Open" | "Closed";
+
+interface task {
+  id: number;
+  teacher_name: string;
+  grade_name: string;
+  title: string;
+  details: string;
+  submission_policy: submission_policy;
+  timer_minutes: number;
+  max_score: number | null;
+  created_at: string;
+  center_schedule: {
+    center: GradeType;
+    open_date: string;
+    close_date: string;
+  };
+  student_submission_status: string;
+  submission_id: number | null;
+  availability_status: availability_status;
+  is_graded: boolean;
+  grade: number | null;
+}
+
+interface stateType {
+  tasks: task[];
+
+  setTasks: (tasks: task[]) => void;
+}
+
+const useTasksStu = create<stateType>((set) => ({
+  tasks: [],
+  setTasks: (tasks) => set({ tasks }),
+}));
+
+export default useTasksStu;

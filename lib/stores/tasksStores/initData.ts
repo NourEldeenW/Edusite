@@ -12,7 +12,7 @@ interface Task {
     close_date: string;
   }[];
   task_content_type: "pdf" | "text";
-  submission_policy: "single" | "editable";
+  submission_policy: "single";
   submission_type: "pdf" | "text" | "both";
   max_score: string;
   created_at: string;
@@ -26,8 +26,11 @@ interface StateType {
   setAllTasks: (tasks: Task[]) => void;
   setAvailGrades: (grades: GradeType[]) => void;
   setAvailCenters: (centers: GradeType[]) => void;
+
   addTask: (task: Task) => void;
   deleteTask: (id: number) => void;
+
+  updateTask: (id: number, updatedTask: Task) => void; // <-- add this
 }
 
 const useTaskStore = create<StateType>((set) => ({
@@ -47,6 +50,11 @@ const useTaskStore = create<StateType>((set) => ({
   deleteTask: (id) =>
     set((state) => ({
       allTasks: state.allTasks.filter((t) => t.id !== id),
+    })),
+
+  updateTask: (id, updatedTask) =>
+    set((state) => ({
+      allTasks: state.allTasks.map((t) => (t.id === id ? updatedTask : t)),
     })),
 }));
 

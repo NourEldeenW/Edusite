@@ -1,5 +1,4 @@
 import { Input } from "@/components/ui/input";
-import useSubmissionsStore from "@/lib/stores/onlineQuizStores/submissions";
 import { useCallback, useMemo, useState } from "react";
 import { FilterPopover } from "../../../students/_students comps/tabledata";
 import {
@@ -23,7 +22,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import useQuizStore_initial from "@/lib/stores/onlineQuizStores/initialData";
 import {
   Table,
   TableBody,
@@ -55,8 +53,18 @@ import {
 import { api } from "@/lib/axiosinterceptor";
 import Link from "next/link";
 import { showToast } from "../../../students/_students comps/main";
+import useTaskStore from "@/lib/stores/tasksStores/initData";
+import useSubmissionsStore from "@/lib/stores/tasksStores/submissions";
 
-export default function SubmissionsTable() {
+export default function TSubmissionsTable({
+  access,
+  taskId,
+}: {
+  access: string;
+  taskId: number;
+}) {
+  const availableCenters = useTaskStore((state) => state.availCenters);
+  const submissions = useSubmissionsStore((state) => state.submissions);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCenter, setSelectedCenter] = useState<string | number>("all");
   const [selectedStatus, setSelectedStatus] = useState<string | number>("all");
@@ -68,29 +76,25 @@ export default function SubmissionsTable() {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const access = useQuizStore_initial((state) => state.access);
-  const availableCenters = useQuizStore_initial((state) => state.availCenters);
-  const submissions = useSubmissionsStore((state) => state.submissions);
-
   const statusOptions = useMemo(
     () => [
       { id: "all", name: "All Status" },
-      { id: "Not Started", name: "Not Started" },
-      { id: "In Progress", name: "In Progress" },
-      { id: "Finished", name: "Finished" },
+      { id: "not_started", name: "Not Started" },
+      { id: "in_progress", name: "In Progress" },
+      { id: "submitted", name: "Submitted" },
+      { id: "corrected", name: "Corrected" },
     ],
     []
   );
-
-  // Added helper function to validate student ID
-  const isValidStudentId = useCallback((id: number | null): id is number => {
-    return id !== null && id !== undefined;
-  }, []);
 
   const handleDeleteClick = (studentId: number) => {
     setDeleteSubmissionId(studentId);
     setIsDeleteDialogOpen(true);
   };
+
+  const isValidStudentId = useCallback((id: number | null): id is number => {
+    return id !== null && id !== undefined;
+  }, []);
 
   const selectedCenterName = useMemo(
     () =>
@@ -132,14 +136,14 @@ export default function SubmissionsTable() {
           const hasDigits = normalizedQuery.length > 0;
 
           const matchesSearch =
-            submission.student_name.toLowerCase().includes(query) ||
+            submission.student.full_name.toLowerCase().includes(query) ||
             (hasDigits &&
-              normalizePhone(submission.phone_number).includes(
+              normalizePhone(submission.student.phone_number).includes(
                 normalizedQuery
               )) ||
             (hasDigits &&
-              submission.parent_phone_number &&
-              normalizePhone(submission.parent_phone_number).includes(
+              submission.student.parent_number &&
+              normalizePhone(submission.student.parent_number).includes(
                 normalizedQuery
               ));
 
@@ -149,16 +153,13 @@ export default function SubmissionsTable() {
         // Center filter
         if (
           selectedCenter !== "all" &&
-          submission.center.id.toString() !== selectedCenter
+          submission.student.center_id.toString() !== selectedCenter
         ) {
           return false;
         }
 
         // Status filter
-        if (
-          selectedStatus !== "all" &&
-          submission.submission_status !== selectedStatus
-        ) {
+        if (selectedStatus !== "all" && submission.status !== selectedStatus) {
           return false;
         }
 
@@ -174,7 +175,7 @@ export default function SubmissionsTable() {
         }
 
         // Secondary sort: name (for entries with same/no start time)
-        return a.student_name.localeCompare(b.student_name);
+        return a.student.full_name.localeCompare(b.student.full_name);
       });
   }, [
     normalizePhone,
@@ -190,9 +191,7 @@ export default function SubmissionsTable() {
     setIsLoading(true);
     try {
       await api.delete(
-        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}onlinequiz/quizzes/${
-          useSubmissionsStore.getState().selectedQuizId
-        }/submissions/${deleteSubmissionId}/`,
+        `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}task/tasks/${taskId}/submissions/${deleteSubmissionId}/`,
         {
           headers: { Authorization: `Bearer ${access}` },
         }
@@ -202,7 +201,7 @@ export default function SubmissionsTable() {
         (submission) => submission.id === deleteSubmissionId
       );
       if (index !== -1) {
-        submissions[index].submission_status = "Not Started";
+        submissions[index].status = "not_started";
       }
     } catch (error) {
       console.error("Failed to delete Submission:", error);
@@ -212,7 +211,7 @@ export default function SubmissionsTable() {
       setIsDeleteDialogOpen(false);
       setDeleteSubmissionId(null);
     }
-  }, [access, deleteSubmissionId, submissions]);
+  }, [access, deleteSubmissionId, submissions, taskId]);
 
   return (
     <>
@@ -297,6 +296,7 @@ export default function SubmissionsTable() {
                 End time
               </TableHead>
               <TableHead className="min-w-[100px] text-left">Status</TableHead>
+              {/* Added Corrected by column header */}
               <TableHead className="min-w-[80px] text-left">
                 Time taken
               </TableHead>
@@ -304,8 +304,8 @@ export default function SubmissionsTable() {
               <TableHead className="min-w-[60px] text-left">
                 Score Released
               </TableHead>
-              <TableHead className="min-w-[60px] text-left">
-                Answers Released
+              <TableHead className="min-w-[120px] text-left">
+                Corrected by
               </TableHead>
               <TableHead className="min-w-[50px] text-left">Actions</TableHead>
             </TableRow>
@@ -313,7 +313,9 @@ export default function SubmissionsTable() {
           <TableBody>
             {tablefilterddata.length > 0 ? (
               tablefilterddata.map((student) => (
-                <TableRow key={student.student} className="hover:bg-bg-subtle">
+                <TableRow
+                  key={student.student.id}
+                  className="hover:bg-bg-subtle">
                   <TableCell className="py-2 px-3">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -321,14 +323,14 @@ export default function SubmissionsTable() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-text-primary whitespace-nowrap truncate">
-                          {student.student_name}
+                          {student.student.full_name}
                         </p>
                         <Badge
                           variant="outline"
                           className="gap-1 text-xs px-1 py-0">
                           <Building2 className="h-3 w-3" />
                           <span className="truncate max-w-[100px]">
-                            {student.center.name}
+                            {student.student.center_name}
                           </span>
                         </Badge>
                       </div>
@@ -338,12 +340,12 @@ export default function SubmissionsTable() {
                     <div className="flex flex-col gap-0.5 text-sm">
                       <div className="flex items-center gap-1 whitespace-nowrap">
                         <Phone className="h-3 w-3 text-text-secondary" />
-                        <span>{student.phone_number}</span>
+                        <span>{student.student.phone_number}</span>
                       </div>
-                      {student.parent_phone_number && (
+                      {student.student.parent_number && (
                         <div className="flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
                           <Users className="h-3 w-3" />
-                          <span>{student.parent_phone_number}</span>
+                          <span>{student.student.parent_number}</span>
                         </div>
                       )}
                     </div>
@@ -361,14 +363,29 @@ export default function SubmissionsTable() {
                   <TableCell className="py-2 px-3">
                     <Badge
                       variant="outline"
-                      className={`text-xs px-1.5 py-0.5 ${
-                        student.submission_status === "Finished"
-                          ? "bg-success/10 text-success border-success/30"
-                          : student.submission_status === "In Progress"
+                      className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        student.status === "not_started"
+                          ? "bg-gray-100 text-gray-700 border-gray-300"
+                          : student.status === "in_progress"
                           ? "bg-warning/10 text-warning border-warning/30"
-                          : "bg-error/10 text-error border-error/30"
+                          : student.status === "submitted"
+                          ? "bg-info/10 text-info border-info/30"
+                          : student.status === "corrected"
+                          ? "bg-success/10 text-success border-success/30"
+                          : "bg-gray-100 text-gray-700 border-gray-300"
                       } border`}>
-                      {student.submission_status}
+                      {student.status === "not_started" && "Not Started"}
+                      {student.status === "in_progress" && "In Progress"}
+                      {student.status === "submitted" && "Submitted"}
+                      {student.status === "corrected" && "Corrected"}
+                      {![
+                        "not_started",
+                        "in_progress",
+                        "submitted",
+                        "corrected",
+                      ].includes(student.status) &&
+                        student.status.charAt(0).toUpperCase() +
+                          student.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
@@ -380,7 +397,7 @@ export default function SubmissionsTable() {
 
                   <TableCell className="py-2 px-3">
                     <div className="flex justify-start">
-                      {student.is_score_released ? (
+                      {student.is_released ? (
                         <CheckCircle2 className="h-4 w-4 text-success" />
                       ) : (
                         <XCircle className="h-4 w-4 text-destructive" />
@@ -388,14 +405,20 @@ export default function SubmissionsTable() {
                     </div>
                   </TableCell>
 
-                  <TableCell className="py-2 px-3">
-                    <div className="flex justify-start">
-                      {student.are_answers_released ? (
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
+                  <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
+                    {student.corrected_by ? (
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {typeof student.corrected_by === "string"
+                            ? student.corrected_by
+                            : "N/A"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-text-disabled">
+                        Not Corrected Yet!
+                      </span>
+                    )}
                   </TableCell>
 
                   <TableCell className="py-2 px-3">
@@ -417,9 +440,7 @@ export default function SubmissionsTable() {
                         <DropdownMenuItem className="p-0">
                           {isValidStudentId(student.id) ? (
                             <Link
-                              href={`/quizzes/${
-                                useSubmissionsStore.getState().selectedQuizId
-                              }/review/${student.id}`}
+                              href={`/tasks/${taskId}/review/${student.id}`}
                               className="flex items-center gap-2 px-2 py-1 text-xs w-full hover:text-text-inverse hover:cursor-pointer focus:bg-bg-subtle">
                               <Eye className="h-3 w-3 text-text-secondary" />
                               <span>View Details</span>

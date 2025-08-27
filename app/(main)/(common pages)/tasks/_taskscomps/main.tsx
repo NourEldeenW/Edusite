@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import TDashboard from "./tDashboard";
 import TDashboardSkeleton from "./_tDashboardcomps/dashSkeleton";
+import TSubmissions from "./tSubmissions";
 
 interface props {
   access: string;
@@ -42,12 +43,11 @@ export default function TasksPage({ access }: props) {
 
   const view = searchParams?.get("view") ?? "dashboard";
 
-  switch (view) {
-    case "dashboard":
-      if (loading) return <TDashboardSkeleton />;
-      return <TDashboard access={access} />;
-    default:
-      if (loading) return <TDashboardSkeleton />;
-      return <TDashboard access={access} />;
+  // Render based on current view
+  if (view === "submissions") {
+    return <TSubmissions access={access} />;
   }
+
+  if (loading) return <TDashboardSkeleton />;
+  return <TDashboard access={access} />;
 }

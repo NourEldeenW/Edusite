@@ -51,7 +51,6 @@ interface Task {
   task_text: string;
   task_pdf: string | null;
   submission_type: "text" | "pdf" | "both";
-  submission_policy: "single" | "editable";
   timer_minutes: number;
   max_score: number | null;
   created_at: string;
@@ -102,6 +101,7 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const availCenters = useTaskStore((state) => state.availCenters);
   const availGrades = useTaskStore((state) => state.availGrades);
+  const updateTask = useTaskStore((state) => state.updateTask);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,9 +129,6 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
   const [submissionType, setSubmissionType] = useState<"text" | "pdf" | "both">(
     "text"
   );
-  const [submissionPolicy, setSubmissionPolicy] = useState<
-    "single" | "editable"
-  >("single");
   const [timerMinutes, setTimerMinutes] = useState<number>(0);
   const [maxScore, setMaxScore] = useState<string>("");
 
@@ -167,7 +164,6 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
         setTaskText(task.task_text || "");
         setExistingPdfUrl(task.task_pdf);
         setSubmissionType(task.submission_type as "text" | "pdf" | "both");
-        setSubmissionPolicy(task.submission_policy as "single" | "editable");
         setTimerMinutes(task.timer_minutes);
         setMaxScore(task.max_score ? String(task.max_score) : "");
       } catch (err) {
@@ -201,7 +197,6 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
     setExistingPdfUrl(null);
     setRemoveExistingPdf(false);
     setSubmissionType("text");
-    setSubmissionPolicy("single");
     setTimerMinutes(0);
     setMaxScore("");
     setFormErrors([]);
@@ -395,11 +390,13 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
         formData.append(`centers[${index}][close_date]`, center.close_date);
       });
 
-      await api.put(`${djangoApi}task/tasks/${taskId}/`, formData, {
+      const res = await api.put(`${djangoApi}task/tasks/${taskId}/`, formData, {
         headers: {
           Authorization: `Bearer ${access}`,
         },
       });
+
+      updateTask(taskId, res.data);
 
       setDialogOpen(false);
       toast.success("Task updated successfully!");
@@ -874,41 +871,6 @@ export default function TEdit({ taskId, access, onSuccess }: TEditProps) {
                       <Label htmlFor="both-submission">Text or PDF</Label>
                     </div>
                   </RadioGroup>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="font-medium text-text-primary block mb-2">
-                    Submission Policy
-                  </Label>
-                  <RadioGroup
-                    value={submissionPolicy}
-                    className="space-y-2 opacity-70 cursor-not-allowed">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="single"
-                        id="single-submission"
-                        checked={submissionPolicy === "single"}
-                        disabled
-                      />
-                      <Label htmlFor="single-submission">
-                        Single Submission
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="editable"
-                        id="editable-submission"
-                        checked={submissionPolicy === "editable"}
-                        disabled
-                      />
-                      <Label htmlFor="editable-submission">
-                        Editable Until Deadline
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                  <p className="text-sm text-text-secondary">
-                    Policy cannot be changed after creation
-                  </p>
                 </div>
               </div>
 

@@ -8,13 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import useTaskStore from "@/lib/stores/tasksStores/initData";
-import { Trash2, Search, FileText, Filter, Plus } from "lucide-react";
+import { Trash2, Search, FileText, Filter, Eye } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGraduationCap } from "@fortawesome/free-solid-svg-icons";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatUserDate } from "@/lib/formatDate";
 import TCreate from "./tCreate";
@@ -29,9 +27,10 @@ import {
 import { api } from "@/lib/axiosinterceptor";
 import { showToast } from "../../students/_students comps/main";
 import TEdit from "./tEdit";
+import { useSearchParams } from "next/navigation";
 
 export default function TDashboard({ access }: { access: string }) {
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const allTasks = useTaskStore((state) => state.allTasks);
   const deleteTask = useTaskStore((state) => state.deleteTask);
 
@@ -79,6 +78,31 @@ export default function TDashboard({ access }: { access: string }) {
     } finally {
       setIsDeleteing(false);
     }
+  };
+
+  // Badge color mapper
+  const getBadgeVariant = (type: string, value: string) => {
+    if (type === "content") {
+      return value === "pdf" ? "destructive" : "default"; // Changed from "success" to "default"
+    }
+    if (type === "submission") {
+      return value === "pdf"
+        ? "destructive"
+        : value === "text"
+        ? "default" // Changed from "success" to "default"
+        : "info";
+    }
+    if (type === "policy") {
+      return value === "single" ? "destructive" : "success";
+    }
+    return "secondary";
+  };
+
+  const handleClickViewSubmissions = (taskId: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("view", "submissions");
+    params.set("id", taskId);
+    window.history.pushState({}, "", `?${params.toString()}`);
   };
 
   return (
@@ -147,12 +171,7 @@ export default function TDashboard({ access }: { access: string }) {
                   ? "Get started by creating your first task"
                   : "Try adjusting your search or filter criteria"}
               </p>
-              <Button asChild>
-                <Link href={`${pathname}?view=create`}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Online Task
-                </Link>
-              </Button>
+              <TCreate access={access} />
             </CardContent>
           </Card>
         ) : (
@@ -235,20 +254,39 @@ export default function TDashboard({ access }: { access: string }) {
                   </div>
 
                   {/* --- Footer / Always at Bottom --- */}
-                  <div className="mt-auto pt-4 border-t border-gray-100 space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">
+                  <div className="mt-auto pt-4 border-t border-gray-100 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">
                         Content Type:
                       </span>
-                      <Badge variant="secondary" className="font-medium">
+                      <Badge
+                        variant={
+                          getBadgeVariant("content", task.task_content_type) as
+                            | "destructive"
+                            | "secondary"
+                            | "default"
+                            | "outline"
+                        } // Explicitly cast to valid BadgeVariant
+                        className="font-medium">
                         {task.task_content_type === "pdf" ? "PDF" : "Text"}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">
                         Submission Type:
                       </span>
-                      <Badge variant="secondary" className="font-medium">
+                      <Badge
+                        variant={
+                          getBadgeVariant(
+                            "submission",
+                            task.submission_type
+                          ) as
+                            | "destructive"
+                            | "secondary"
+                            | "default"
+                            | "outline"
+                        } // Explicitly cast to valid BadgeVariant
+                        className="font-medium">
                         {task.submission_type === "both"
                           ? "PDF and Text"
                           : task.task_content_type === "pdf"
@@ -256,18 +294,19 @@ export default function TDashboard({ access }: { access: string }) {
                           : "Text"}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">
-                        Content Policy:
-                      </span>
-                      <Badge variant="secondary" className="font-medium">
-                        {task.submission_policy === "single"
-                          ? "Single Submission"
-                          : "Editable"}
-                      </Badge>
-                    </div>
                   </div>
                 </div>
+                <CardFooter className="p-4 border-t border-gray-100">
+                  <Button
+                    variant={"ghost"}
+                    onClick={() =>
+                      handleClickViewSubmissions(task.id.toString())
+                    }
+                    className="text-primary hover:text-primary-dark flex items-center gap-1.5 font-medium w-full px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors justify-center">
+                    <Eye className="w-5 h-5" />
+                    <span>View Details</span>
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>

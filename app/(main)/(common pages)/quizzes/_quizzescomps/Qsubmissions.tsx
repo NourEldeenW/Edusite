@@ -10,7 +10,7 @@ import {
   faHourglassHalf,
   faRotate,
   faUsers,
-  faUndo, // Added undo icon
+  faUndo,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState, useRef } from "react";
@@ -25,7 +25,7 @@ export default function QSubmissions() {
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isReleasingScore, setIsReleasingScore] = useState(false);
   const [isReleasingAnswers, setIsReleasingAnswers] = useState(false);
-  const [isUndoing, setIsUndoing] = useState(false); // New state for undo operation
+  const [isUndoing, setIsUndoing] = useState(false);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const updateCurrentMainView = useViewStore(
     (state) => state.updateCurrentMainView
@@ -51,7 +51,7 @@ export default function QSubmissions() {
 
     setCounter((prev) => prev + 1);
     setCooldown(true);
-    setCooldownSeconds(10);
+    setCooldownSeconds(5);
 
     cooldownTimerRef.current = setInterval(() => {
       setCooldownSeconds((prev) => {

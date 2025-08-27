@@ -1,5 +1,4 @@
 "use client";
-
 import { Button } from "@/components/ui/button";
 import { SessionType } from "@/lib/stores/SessionsStores/allSessionsStore";
 import {
@@ -54,6 +53,7 @@ interface TestScore {
   max_score: string;
   percentage: number;
   notes: string;
+  corrected_by?: string | { full_name: string };
 }
 
 interface HomeworkRecord {
@@ -110,7 +110,6 @@ export default function SessionDetails({
 
   useEffect(() => {
     if (!selected_session) return;
-
     const fetchStats = async () => {
       try {
         setLoadingStats(true);
@@ -125,13 +124,11 @@ export default function SessionDetails({
         setLoadingStats(false);
       }
     };
-
     fetchStats();
   }, [selected_session, access]);
 
   useEffect(() => {
     if (!selected_session) return;
-
     const fetchTestScores = async () => {
       try {
         setLoadingScores(true);
@@ -146,7 +143,6 @@ export default function SessionDetails({
         setLoadingScores(false);
       }
     };
-
     if (selected_session.has_test) {
       fetchTestScores();
     } else {
@@ -156,7 +152,6 @@ export default function SessionDetails({
 
   useEffect(() => {
     if (!selected_session) return;
-
     const fetchHomeworkRecords = async () => {
       try {
         setLoadingHomework(true);
@@ -171,7 +166,6 @@ export default function SessionDetails({
         setLoadingHomework(false);
       }
     };
-
     if (selected_session.has_homework) {
       fetchHomeworkRecords();
     } else {
@@ -216,7 +210,6 @@ export default function SessionDetails({
       };
 
       let updatedScore: TestScore;
-
       if (isNew) {
         // Create new score
         const response = await api.post(
@@ -259,10 +252,8 @@ export default function SessionDetails({
 
   const setMaxScoreForSession = async (maxScore: number) => {
     if (!selected_session) return;
-
     try {
       setIsCreatingScores(true);
-
       // Set max score
       await api.put(
         `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/set-max-score/`,
@@ -276,7 +267,6 @@ export default function SessionDetails({
         const existingScore = testScores.find(
           (score) => score.student.id === student_id
         );
-
         return existingScore
           ? {
               id: existingScore.id,
@@ -306,8 +296,8 @@ export default function SessionDetails({
         `${process.env.NEXT_PUBLIC_DJANGO_BASE_URL}session/sessions/${selected_session.id}/scores/`,
         { headers: { Authorization: `Bearer ${access}` } }
       );
-
       setTestScores(scoresResponse.data);
+
       setIsSetMaxScoreDialogOpen(false);
       setNewMaxScore("");
     } catch (error) {
@@ -374,26 +364,26 @@ export default function SessionDetails({
 
   if (!selected_session) {
     return (
-      <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-border-default">
-        <div className="flex justify-between items-center mb-6">
-          <Button variant="outline" onClick={navigateBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+      <div className="p-4 sm:p-6 bg-bg-secondary dark:bg-gray-800 rounded-2xl border border-border-default">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <Button variant="outline" onClick={navigateBack} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
             Back to Sessions
           </Button>
         </div>
-        <div className="py-12 text-center">
-          <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CalendarDays className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        <div className="py-8 sm:py-12 text-center">
+          <div className="bg-gray-100 dark:bg-gray-800 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <CalendarDays className="w-5 h-5 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+          <h3 className="text-base sm:text-lg font-medium text-text-primary dark:text-gray-300">
             No session selected
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+          <p className="text-sm text-text-secondary dark:text-gray-400 mt-1 mb-3 sm:mb-4">
             Please select a session to view details
           </p>
           <Button
             onClick={navigateBack}
-            className="flex items-center gap-2 mx-auto">
+            className="flex items-center gap-2 mx-auto px-4 py-2">
             Back to Sessions
           </Button>
         </div>
@@ -409,90 +399,104 @@ export default function SessionDetails({
             100
         )
       : 0;
+
   const circumference = 2 * Math.PI * 42;
   const dashoffset =
     circumference - (attendancePercentage / 100) * circumference;
 
   return (
-    <>
-      <div className="space-y-6 lg:space-y-8">
-        <div className="flex items-center gap-3">
+    <div className="w-full">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={navigateBack}
-            className="rounded-full border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            className="rounded-full border border-border-default hover:bg-bg-subtle dark:border-gray-600 dark:hover:bg-gray-700">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary dark:text-gray-300" />
           </Button>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-gray-100">
             Session Details
           </h1>
         </div>
 
         {/* Session Info Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div className="bg-bg-secondary dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-border-default p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
             <div>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-16 h-16 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-text-primary dark:text-dark-text">
+                  <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-gray-100 line-clamp-2">
                     {selected_session.title}
                   </h2>
-                  <p className="text-text-secondary dark:text-dark-text-secondary flex items-center gap-2 mt-2">
-                    <CalendarDays className="w-4 h-4" />
-                    <span>{formattedDate}</span>
+                  <p className="text-text-secondary dark:text-gray-400 flex items-center gap-1.5 mt-1.5 sm:mt-2 text-sm sm:text-base">
+                    <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">
+                      {formattedDate}
+                    </span>
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4" /> Grade
+
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                <div className="bg-bg-subtle dark:bg-gray-700/50 p-3 sm:p-4 rounded-lg sm:rounded-xl">
+                  <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Grade
                   </p>
-                  <p className="font-bold mt-1 text-text-primary dark:text-dark-text">
+                  <p className="font-semibold mt-1 text-text-primary dark:text-gray-100 text-sm sm:text-base line-clamp-1">
                     {selected_session.grade.name}
                   </p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
-                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5">
-                    <School className="w-4 h-4" /> Center
+                <div className="bg-bg-subtle dark:bg-gray-700/50 p-3 sm:p-4 rounded-lg sm:rounded-xl">
+                  <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400 flex items-center gap-1.5">
+                    <School className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Center
                   </p>
-                  <p className="font-bold mt-1 text-text-primary dark:text-dark-text">
+                  <p className="font-semibold mt-1 text-text-primary dark:text-gray-100 text-sm sm:text-base line-clamp-1">
                     {selected_session.center.name}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="space-y-6">
+
+            <div className="space-y-3 sm:space-y-6">
               <div>
-                <h3 className="text-lg font-bold mb-2">Session Description</h3>
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                <h3 className="text-base sm:text-lg font-bold mb-1.5 sm:mb-2">
+                  Session Description
+                </h3>
+                <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400 min-h-[40px]">
                   {selected_session.notes || "No description available"}
                 </p>
               </div>
+
               <div>
-                <h3 className="text-lg font-bold mb-2">Session Activities</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="text-base sm:text-lg font-bold mb-1.5 sm:mb-2">
+                  Session Activities
+                </h3>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {selected_session.has_homework && (
                     <Badge
                       variant="outline"
-                      className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
+                      className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 px-2 py-0.5 text-xs sm:text-sm">
                       Has Homework
                     </Badge>
                   )}
                   {selected_session.has_test && (
                     <Badge
                       variant="outline"
-                      className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700">
+                      className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 px-2 py-0.5 text-xs sm:text-sm">
                       Has Test
                     </Badge>
                   )}
                   {!selected_session.has_homework &&
                     !selected_session.has_test && (
-                      <Badge variant="secondary">No activities recorded</Badge>
+                      <Badge
+                        variant="secondary"
+                        className="px-2 py-0.5 text-xs sm:text-sm">
+                        No activities recorded
+                      </Badge>
                     )}
                 </div>
               </div>
@@ -501,26 +505,32 @@ export default function SessionDetails({
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 lg:gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column: Attendance and Students */}
-          <div className="xl:col-span-3 space-y-6 lg:space-y-8">
+          <div className="lg:col-span-2 xl:col-span-3 space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Attendance Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4">Attendance Summary</h2>
+            <div className="bg-bg-secondary dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-border-default p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                Attendance Summary
+              </h2>
+
               {loadingStats ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-24 w-full rounded-xl" />
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <Skeleton className="h-16 w-full rounded-lg sm:rounded-xl" />
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                     {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 rounded-xl" />
+                      <Skeleton
+                        key={i}
+                        className="h-12 sm:h-16 rounded-lg sm:rounded-xl"
+                      />
                     ))}
                   </div>
                 </div>
               ) : sessionStats ? (
                 <>
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-24 h-24 shrink-0">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 shrink-0">
                         <svg className="w-full h-full" viewBox="0 0 100 100">
                           <circle
                             className="text-gray-200 dark:text-gray-700"
@@ -549,86 +559,89 @@ export default function SessionDetails({
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-2xl font-bold text-text-primary dark:text-dark-text">
+                          <span className="text-base sm:text-2xl font-bold text-text-primary dark:text-gray-100">
                             {attendancePercentage}%
                           </span>
                         </div>
                       </div>
                       <div>
-                        <p className="text-3xl font-bold text-text-primary dark:text-dark-text">
+                        <p className="text-xl sm:text-3xl font-bold text-text-primary dark:text-gray-100">
                           {sessionStats.present_same_center}/
-                          <span className="text-gray-500">
+                          <span className="text-text-secondary dark:text-gray-400">
                             {sessionStats.expected_attendance_same_center}
                           </span>
                         </p>
-                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                        <p className="text-xs sm:text-sm text-text-secondary dark:text-gray-400">
                           Students present
                         </p>
                       </div>
                     </div>
-                    <p className="font-bold text-text-primary dark:text-dark-text text-lg">
+                    <p className="font-bold text-text-primary dark:text-gray-100 text-base sm:text-lg w-full sm:w-auto text-center sm:text-left">
                       Total Attended: {sessionStats.total_present}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-xl sm:text-2xl font-bold text-green-600">
                         {sessionStats.present_same_center}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs sm:text-xs text-text-secondary dark:text-gray-400 truncate">
                         Present ({selected_session.center.name})
                       </p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-red-600">
+                      <p className="text-xl sm:text-2xl font-bold text-red-600">
                         {sessionStats.total_absent}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs sm:text-xs text-text-secondary dark:text-gray-400">
                         Absent
                       </p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-yellow-600">
+                      <p className="text-xl sm:text-2xl font-bold text-yellow-600">
                         {sessionStats.present_other_center}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs sm:text-xs text-text-secondary dark:text-gray-400 truncate">
                         From other centers
                       </p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">
                         {sessionStats.expected_attendance_same_center}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs sm:text-xs text-text-secondary dark:text-gray-400">
                         Expected
                       </p>
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="py-8 text-center">
-                  <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">Attendance data not available</p>
+                <div className="py-6 sm:py-8 text-center">
+                  <AlertCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-gray-400 mb-2 sm:mb-4" />
+                  <p className="text-text-secondary dark:text-gray-400 text-sm sm:text-base">
+                    Attendance data not available
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Student List - Now shows attended students first */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
-                <h2 className="text-xl font-bold">Students</h2>
+            {/* Student List */}
+            <div className="bg-bg-secondary dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-border-default p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-bold">Students</h2>
                 <div className="relative w-full sm:w-64">
                   <Input
                     type="text"
                     placeholder="Search students..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-full"
+                    className="pl-10 w-full h-9 text-sm"
                   />
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       viewBox="0 0 20 20"
                       fill="currentColor">
                       <path
@@ -640,26 +653,27 @@ export default function SessionDetails({
                   </span>
                 </div>
               </div>
-              <div className="overflow-x-auto max-h-[500px]">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+
+              <div className="overflow-x-auto max-h-[400px] sm:max-h-[500px] -mx-4 sm:-mx-6 px-4 sm:px-6">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead className="sticky top-0 bg-bg-secondary dark:bg-gray-800 z-10">
                     <tr className="border-b border-border-default dark:border-gray-700">
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[160px]">
                         Student
                       </th>
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[120px]">
                         Contact
                       </th>
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
-                        center
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[100px] hidden md:table-cell">
+                        Center
                       </th>
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[90px]">
                         Status
                       </th>
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[90px] hidden sm:table-cell">
                         Score
                       </th>
-                      <th className="text-left py-3 px-2 text-text-secondary dark:text-dark-text-secondary font-semibold">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[100px] hidden sm:table-cell">
                         Homework
                       </th>
                     </tr>
@@ -676,52 +690,62 @@ export default function SessionDetails({
                         const studentHomework = homeworkRecords.find(
                           (hw) => hw.student.id === student.id
                         );
+
                         return (
                           <tr
                             key={student.id}
                             className={cn(
-                              "border-b border-border-default dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50",
-                              !isPresent && "bg-gray-50 dark:bg-gray-800/50"
+                              "border-b border-border-default dark:border-gray-700 hover:bg-bg-subtle dark:hover:bg-gray-700/50",
+                              !isPresent && "bg-bg-subtle dark:bg-gray-800/50"
                             )}>
-                            <td className="py-3 px-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                                  <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
+                              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-300" />
                                 </div>
-                                <div>
-                                  <p className="font-medium text-text-primary dark:text-dark-text">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-text-primary dark:text-gray-100 text-sm sm:text-base break-words">
                                     {student.full_name}
                                   </p>
-                                  <p className="text-xs text-text-secondary">
+                                  <p className="text-xs text-text-secondary dark:text-gray-400 hidden md:block">
                                     ID: {student.student_id}
                                   </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 px-2">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Phone className="h-3 w-3 text-text-secondary" />
-                                  <span>{student.phone_number}</span>
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
+                              <div className="space-y-0.5 sm:space-y-1">
+                                <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+                                  <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-text-secondary" />
+                                  <span className="truncate max-w-[120px] sm:max-w-none">
+                                    {student.phone_number}
+                                  </span>
                                 </div>
                                 {student.parent_number && (
-                                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                                    <Users className="h-3 w-3" />
-                                    <span>{student.parent_number}</span>
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-text-secondary">
+                                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <span className="truncate max-w-[120px] sm:max-w-none">
+                                      {student.parent_number}
+                                    </span>
                                   </div>
                                 )}
                               </div>
                             </td>
-                            <td>
-                              <Badge variant="outline" className="gap-1">
-                                <Building2 className="h-4 w-4" />
-                                {student.center.name}
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 hidden md:table-cell">
+                              <Badge
+                                variant="outline"
+                                className="gap-1 px-2 py-0.5 text-xs">
+                                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span className="truncate max-w-[80px]">
+                                  {student.center.name}
+                                </span>
                               </Badge>
                             </td>
-                            <td className="py-3 px-2">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
                               <Badge
                                 variant={isPresent ? "default" : "destructive"}
                                 className={cn(
+                                  "px-2 py-0.5 text-xs",
                                   isPresent
                                     ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
                                     : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
@@ -729,20 +753,26 @@ export default function SessionDetails({
                                 {isPresent ? "Present" : "Absent"}
                               </Badge>
                             </td>
-                            <td className="py-3 px-2">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">
                               {studentScore ? (
-                                `${studentScore.score ?? "no score "}/${
-                                  studentScore.max_score
-                                }`
+                                <div className="text-sm">
+                                  {studentScore.score ?? "no score "}/
+                                  {studentScore.max_score}{" "}
+                                  <span className="text-text-secondary">
+                                    ({studentScore.percentage}%)
+                                  </span>
+                                </div>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span className="text-text-secondary text-sm">
+                                  -
+                                </span>
                               )}
                             </td>
-                            <td className="py-3 px-2">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 hidden sm:table-cell">
                               {studentHomework ? (
                                 <span
                                   className={cn(
-                                    "font-medium",
+                                    "font-medium text-sm",
                                     studentHomework.completed
                                       ? "text-green-600"
                                       : "text-yellow-600"
@@ -752,7 +782,9 @@ export default function SessionDetails({
                                     : "Not Done"}
                                 </span>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span className="text-text-secondary text-sm">
+                                  -
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -761,8 +793,8 @@ export default function SessionDetails({
                     ) : (
                       <tr>
                         <td
-                          colSpan={5}
-                          className="py-8 text-center text-gray-500">
+                          colSpan={6}
+                          className="py-6 sm:py-8 text-center text-text-secondary dark:text-gray-400 text-sm sm:text-base">
                           No matching students found
                         </td>
                       </tr>
@@ -771,6 +803,7 @@ export default function SessionDetails({
                 </table>
               </div>
             </div>
+
             {role === "teacher" && selected_session.has_test && (
               <EditHis
                 sID={selected_session.id}
@@ -781,25 +814,25 @@ export default function SessionDetails({
           </div>
 
           {/* Right Column: Test and Homework */}
-          <div className="xl:col-span-2 space-y-6 lg:space-y-8">
+          <div className="lg:col-span-1 xl:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Test Scores */}
             {selected_session.has_test && (
-              <div className="bg-bg-secondary dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <h2 className="text-xl font-bold">Test Scores</h2>
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-40 sm:w-56">
+              <div className="bg-bg-secondary dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-border-default p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold">Test Scores</h2>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-40">
                       <Input
                         type="text"
                         placeholder="Search students..."
                         value={testScoreSearch}
                         onChange={(e) => setTestScoreSearch(e.target.value)}
-                        className="pl-10 w-full"
+                        className="pl-10 w-full h-9 text-sm"
                       />
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
+                          className="h-4 w-4"
                           viewBox="0 0 20 20"
                           fill="currentColor">
                           <path
@@ -814,11 +847,14 @@ export default function SessionDetails({
                       open={isSetMaxScoreDialogOpen}
                       onOpenChange={setIsSetMaxScoreDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="default" disabled={isCreatingScores}>
+                        <Button
+                          variant="default"
+                          disabled={isCreatingScores}
+                          className="h-9 text-sm px-3 py-1 whitespace-nowrap">
                           {isCreatingScores ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <svg
-                                className="animate-spin h-4 w-4"
+                                className="animate-spin h-3.5 w-3.5"
                                 viewBox="0 0 24 24">
                                 <circle
                                   cx="12"
@@ -836,12 +872,14 @@ export default function SessionDetails({
                           )}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
-                          <DialogTitle>Set Max Score for Session</DialogTitle>
+                          <DialogTitle className="text-base sm:text-lg">
+                            Set Max Score for Session
+                          </DialogTitle>
                         </DialogHeader>
-                        <div className="py-4">
-                          <p className="mb-4 text-gray-700 dark:text-gray-300">
+                        <div className="py-4 space-y-4">
+                          <p className="text-sm sm:text-base text-text-secondary dark:text-gray-300">
                             This will set a max score of{" "}
                             <span className="font-bold">
                               {newMaxScore || "0"}
@@ -856,23 +894,26 @@ export default function SessionDetails({
                             placeholder="Enter max score"
                             min="1"
                             step="0.5"
+                            className="h-9 text-sm"
                           />
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                           <Button
                             variant="outline"
-                            onClick={() => setIsSetMaxScoreDialogOpen(false)}>
+                            onClick={() => setIsSetMaxScoreDialogOpen(false)}
+                            className="w-full sm:w-auto h-9 text-sm">
                             Cancel
                           </Button>
                           <Button
                             onClick={() =>
                               setMaxScoreForSession(Number(newMaxScore))
                             }
-                            disabled={!newMaxScore || isCreatingScores}>
+                            disabled={!newMaxScore || isCreatingScores}
+                            className="w-full sm:w-auto h-9 text-sm">
                             {isCreatingScores ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
                                 <svg
-                                  className="animate-spin h-4 w-4"
+                                  className="animate-spin h-3.5 w-3.5"
                                   viewBox="0 0 24 24">
                                   <circle
                                     cx="12"
@@ -896,26 +937,29 @@ export default function SessionDetails({
                 </div>
 
                 {loadingScores ? (
-                  <div className="space-y-4">
-                    {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 rounded-xl" />
+                  <div className="space-y-2 sm:space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-10 sm:h-12 rounded-lg sm:rounded-xl"
+                      />
                     ))}
                   </div>
                 ) : filteredTestScores.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[500px]">
-                    <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                  <div className="overflow-x-auto max-h-[400px] sm:max-h-[500px] -mx-4 sm:-mx-6 px-4 sm:px-6">
+                    <table className="w-full text-xs sm:text-sm">
+                      <thead className="sticky top-0 bg-bg-secondary dark:bg-gray-800 z-10">
                         <tr>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[140px]">
                             Student
                           </th>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[100px]">
                             Score
                           </th>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[120px] hidden md:table-cell">
                             Notes
                           </th>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[80px]">
                             Actions
                           </th>
                         </tr>
@@ -924,22 +968,21 @@ export default function SessionDetails({
                         {filteredTestScores.map((score) => {
                           const isPlaceholder = score.id < 0;
                           const isSaving = savingScoreId === score.id;
-
                           return (
                             <tr
                               key={score.id}
                               className={cn(
                                 "border-b border-border-default dark:border-gray-700 last:border-0",
                                 isPlaceholder
-                                  ? "bg-gray-50 dark:bg-gray-700/30"
-                                  : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                  ? "bg-bg-subtle dark:bg-gray-700/30"
+                                  : "hover:bg-bg-subtle dark:hover:bg-gray-700/50"
                               )}>
                               {editingScoreId === score.id ? (
                                 <>
-                                  <td className="py-2 px-6 font-medium">
+                                  <td className="py-2 px-2 sm:px-4 font-medium text-sm break-words">
                                     {score.student.full_name}
                                   </td>
-                                  <td className="py-2 px-6">
+                                  <td className="py-2 px-2 sm:px-4">
                                     <Input
                                       type="text"
                                       value={editableScore.score}
@@ -949,11 +992,11 @@ export default function SessionDetails({
                                           score: e.target.value,
                                         })
                                       }
-                                      className="h-8"
+                                      className="h-8 text-sm"
                                       disabled={isSaving}
                                     />
                                   </td>
-                                  <td className="py-2 px-6">
+                                  <td className="py-2 px-2 sm:px-4 hidden md:table-cell">
                                     <Input
                                       type="text"
                                       value={editableScore.notes}
@@ -963,12 +1006,12 @@ export default function SessionDetails({
                                           notes: e.target.value,
                                         })
                                       }
-                                      className="h-8"
+                                      className="h-8 text-sm"
                                       disabled={isSaving}
                                     />
                                   </td>
-                                  <td className="py-2 px-6">
-                                    <div className="flex items-center gap-2">
+                                  <td className="py-2 px-2 sm:px-4">
+                                    <div className="flex items-center gap-1.5">
                                       <Button
                                         size="icon"
                                         className="h-8 w-8 bg-green-500 hover:bg-green-600"
@@ -982,7 +1025,7 @@ export default function SessionDetails({
                                         disabled={isSaving}>
                                         {isSaving ? (
                                           <svg
-                                            className="animate-spin h-4 w-4"
+                                            className="animate-spin h-3.5 w-3.5"
                                             viewBox="0 0 24 24">
                                             <circle
                                               cx="12"
@@ -994,7 +1037,7 @@ export default function SessionDetails({
                                             />
                                           </svg>
                                         ) : (
-                                          <Save className="h-4 w-4" />
+                                          <Save className="h-3.5 w-3.5" />
                                         )}
                                       </Button>
                                       <Button
@@ -1003,31 +1046,31 @@ export default function SessionDetails({
                                         className="h-8 w-8"
                                         onClick={handleCancelEdit}
                                         disabled={isSaving}>
-                                        <Ban className="h-4 w-4" />
+                                        <Ban className="h-3.5 w-3.5" />
                                       </Button>
                                     </div>
                                   </td>
                                 </>
                               ) : (
                                 <>
-                                  <td className="py-4 px-6 font-medium">
+                                  <td className="py-2 sm:py-3 px-2 sm:px-4 font-medium text-sm break-words">
                                     {score.student.full_name}
                                   </td>
-                                  <td className="py-4 px-6">
+                                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-sm">
                                     {score.score ?? "no score "}/
                                     {score.max_score} ({score.percentage}%)
                                   </td>
-                                  <td className="py-4 px-6 text-gray-500">
+                                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-sm text-text-secondary hidden md:table-cell">
                                     {score.notes || "-"}
                                   </td>
-                                  <td className="py-4 px-6">
+                                  <td className="py-2 sm:py-3 px-2 sm:px-4">
                                     <Button
                                       size="icon"
                                       variant="outline"
                                       className="h-8 w-8"
                                       onClick={() => handleEditScore(score)}
                                       disabled={savingScoreId !== null}>
-                                      <Edit className="h-4 w-4" />
+                                      <Edit className="h-3.5 w-3.5" />
                                     </Button>
                                   </td>
                                 </>
@@ -1039,9 +1082,11 @@ export default function SessionDetails({
                     </table>
                   </div>
                 ) : (
-                  <div className="py-8 text-center">
-                    <AlertCircle className="w-10 h-10 mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-500">No test scores recorded</p>
+                  <div className="py-6 sm:py-8 text-center">
+                    <AlertCircle className="w-6 h-6 sm:w-10 sm:h-10 mx-auto text-gray-400 mb-2 sm:mb-3" />
+                    <p className="text-text-secondary dark:text-gray-400 text-sm sm:text-base">
+                      No test scores recorded
+                    </p>
                   </div>
                 )}
               </div>
@@ -1049,21 +1094,23 @@ export default function SessionDetails({
 
             {/* Homework Completion */}
             {selected_session.has_homework && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border-default p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <h2 className="text-xl font-bold">Homework Completion</h2>
-                  <div className="relative w-40 sm:w-56">
+              <div className="bg-bg-secondary dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-border-default p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold">
+                    Homework Completion
+                  </h2>
+                  <div className="relative w-full sm:w-40">
                     <Input
                       type="text"
                       placeholder="Search students..."
                       value={homeworkSearch}
                       onChange={(e) => setHomeworkSearch(e.target.value)}
-                      className="pl-10 w-full"
+                      className="pl-10 w-full h-9 text-sm"
                     />
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
+                        className="h-4 w-4"
                         viewBox="0 0 20 20"
                         fill="currentColor">
                         <path
@@ -1075,24 +1122,28 @@ export default function SessionDetails({
                     </span>
                   </div>
                 </div>
+
                 {loadingHomework ? (
-                  <div className="space-y-4">
-                    {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 rounded-xl" />
+                  <div className="space-y-2 sm:space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-10 sm:h-12 rounded-lg sm:rounded-xl"
+                      />
                     ))}
                   </div>
                 ) : filteredHomeworkRecords.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[500px]">
-                    <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                  <div className="overflow-x-auto max-h-[400px] sm:max-h-[500px] -mx-4 sm:-mx-6 px-4 sm:px-6">
+                    <table className="w-full text-xs sm:text-sm">
+                      <thead className="sticky top-0 bg-bg-secondary dark:bg-gray-800 z-10">
                         <tr>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[140px]">
                             Student
                           </th>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[100px]">
                             Status
                           </th>
-                          <th className="text-left py-3 px-6 font-semibold">
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold min-w-[120px] hidden md:table-cell">
                             Notes
                           </th>
                         </tr>
@@ -1101,11 +1152,11 @@ export default function SessionDetails({
                         {filteredHomeworkRecords.map((hw) => (
                           <tr
                             key={hw.id}
-                            className="border-b border-border-default dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="py-4 px-6 font-medium">
+                            className="border-b border-border-default dark:border-gray-700 last:border-0 hover:bg-bg-subtle dark:hover:bg-gray-700/50">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 font-medium text-sm break-words">
                               {hw.student.full_name}
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-sm">
                               <span
                                 className={cn(
                                   "font-medium",
@@ -1116,7 +1167,7 @@ export default function SessionDetails({
                                 {hw.completed ? "Completed" : "Not Completed"}
                               </span>
                             </td>
-                            <td className="py-4 px-6 text-gray-500">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-sm text-text-secondary hidden md:table-cell">
                               {hw.notes || "-"}
                             </td>
                           </tr>
@@ -1125,9 +1176,11 @@ export default function SessionDetails({
                     </table>
                   </div>
                 ) : (
-                  <div className="py-8 text-center">
-                    <AlertCircle className="w-10 h-10 mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-500">No homework records found</p>
+                  <div className="py-6 sm:py-8 text-center">
+                    <AlertCircle className="w-6 h-6 sm:w-10 sm:h-10 mx-auto text-gray-400 mb-2 sm:mb-3" />
+                    <p className="text-text-secondary dark:text-gray-400 text-sm sm:text-base">
+                      No homework records found
+                    </p>
                   </div>
                 )}
               </div>
@@ -1135,6 +1188,6 @@ export default function SessionDetails({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

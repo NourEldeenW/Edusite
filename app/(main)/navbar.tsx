@@ -108,6 +108,8 @@ export default function Navbar({ links, logo }: NavbarProps) {
     // Special case for quizzes routes
     if (href === "/student/quizzes" && currentPath.startsWith("/quizzes")) {
       return currentPath.startsWith("/quizzes");
+    } else if (href === "/student/tasks" && currentPath.startsWith("/tasks")) {
+      return currentPath.startsWith("/tasks");
     }
 
     // Default behavior

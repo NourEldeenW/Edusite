@@ -83,9 +83,6 @@ export default function TCreate({ access }: { access: string }) {
   const [submissionType, setSubmissionType] = useState<"text" | "pdf" | "both">(
     "text"
   );
-  const [submissionPolicy, setSubmissionPolicy] = useState<
-    "single" | "editable"
-  >("single");
   const [timerMinutes, setTimerMinutes] = useState<number>(0);
   const [maxScore, setMaxScore] = useState<string>("");
 
@@ -105,7 +102,6 @@ export default function TCreate({ access }: { access: string }) {
     setTaskText("");
     setTaskPdf(null);
     setSubmissionType("text");
-    setSubmissionPolicy("single");
     setTimerMinutes(0);
     setMaxScore("");
     setFormErrors([]);
@@ -283,7 +279,6 @@ export default function TCreate({ access }: { access: string }) {
       }
 
       formData.append("submission_type", submissionType);
-      formData.append("submission_policy", submissionPolicy);
       formData.append("timer_minutes", timerMinutes.toString());
 
       if (maxScore) {
@@ -741,29 +736,6 @@ export default function TCreate({ access }: { access: string }) {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="both" id="both-submission" />
                   <Label htmlFor="both-submission">Text or PDF</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-4">
-              <Label className="font-medium text-text-primary block mb-2">
-                Submission Policy
-              </Label>
-              <RadioGroup
-                value={submissionPolicy}
-                onValueChange={(value: "single" | "editable") =>
-                  setSubmissionPolicy(value)
-                }
-                className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="single" id="single-submission" />
-                  <Label htmlFor="single-submission">Single Submission</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="editable" id="editable-submission" />
-                  <Label htmlFor="editable-submission">
-                    Editable Until Deadline
-                  </Label>
                 </div>
               </RadioGroup>
             </div>

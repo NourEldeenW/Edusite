@@ -39,9 +39,21 @@ export default function TakeQuiz({ access, quizId }: propsType) {
 
   return (
     <>
-      {!loading && <Header />}
-      {!loading && <Question />}
-      {!loading && <QuizNavigation />}
+      <div
+        onCopy={(e) => e.preventDefault()}
+        onCut={(e) => e.preventDefault()}
+        onContextMenu={(e) => e.preventDefault()}
+        style={{
+          WebkitTouchCallout: "none", // Blocks iOS long-press screenshot
+          WebkitUserSelect: "none", // Disables text selection
+          MozUserSelect: "none",
+          msUserSelect: "none",
+          userSelect: "none",
+        }}>
+        {!loading && <Header />}
+        {!loading && <Question />}
+        {!loading && <QuizNavigation />}
+      </div>
       <div className="max-w-4xl mx-auto px-4 py-8"></div>
     </>
   );

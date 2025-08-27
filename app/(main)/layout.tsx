@@ -258,6 +258,18 @@ const links = {
         />
       ),
     },
+    {
+      href: "/student/tasks",
+      key: "tasks",
+      name: "Online Tasks",
+      icon: (
+        <FontAwesomeIcon
+          icon={faListCheck}
+          color="#ffff"
+          className="w-[22px] h-[22px]"
+        />
+      ),
+    },
   ],
 };
 

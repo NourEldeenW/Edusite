@@ -137,7 +137,16 @@ interface MaterialCardProps extends MaterialCardData {
 }
 
 const MaterialCard: React.FC<MaterialCardProps> = React.memo(
-  ({ title, type, date, file_url, text_content, onEdit, onDelete }) => {
+  ({
+    title,
+    type,
+    date,
+    file_url,
+    text_content,
+    onEdit,
+    onDelete,
+    external_url,
+  }) => {
     const typeStyles = useMemo(getTypeStyles, []);
     const { iconClass, bgClass } = typeStyles[type];
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -147,13 +156,13 @@ const MaterialCard: React.FC<MaterialCardProps> = React.memo(
       if (type === "text") {
         // Open text preview dialog
         setIsPreviewOpen(true);
-      } else if (type === "link" && file_url) {
+      } else if (type === "link" && external_url) {
         // Open link in new tab
-        window.open(file_url, "_blank");
+        window.open(external_url, "_blank");
       } else if (file_url && type === "pdf") {
         window.open(file_url);
       }
-    }, [type, file_url]);
+    }, [type, external_url, file_url]);
 
     return (
       <>

@@ -147,7 +147,7 @@ const getTypeStyles = (() => {
 })();
 
 const MaterialCard: React.FC<MaterialCardData> = React.memo(
-  ({ title, type, date, file_url, text_content }) => {
+  ({ title, type, date, file_url, text_content, external_url }) => {
     const typeStyles = useMemo(getTypeStyles, []);
     const { iconClass, bgClass } = typeStyles[type];
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -156,13 +156,13 @@ const MaterialCard: React.FC<MaterialCardData> = React.memo(
       if (type === "text") {
         // Open text preview dialog
         setIsPreviewOpen(true);
-      } else if (type === "link" && file_url) {
+      } else if (type === "link" && external_url) {
         // Open link in new tab
-        window.open(file_url, "_blank");
+        window.open(external_url, "_blank");
       } else if (file_url && type === "pdf") {
         window.open(file_url);
       }
-    }, [type, file_url]);
+    }, [type, external_url, file_url]);
 
     return (
       <>

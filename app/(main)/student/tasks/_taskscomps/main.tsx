@@ -4,6 +4,7 @@ import { api } from "@/lib/axiosinterceptor";
 import useTasksStu from "@/lib/stores/student/tasks/tasks";
 import { useEffect, useState } from "react";
 import TDashboard from "./tDashboard";
+import TSkeletonLoader from "./tSkeletonLoader";
 
 export default function Main({ access }: { access: string }) {
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,8 @@ export default function Main({ access }: { access: string }) {
     };
     fetchTasks();
   }, [access, setTasks]);
+
+  if (loading) return <TSkeletonLoader />;
 
   return (
     <>

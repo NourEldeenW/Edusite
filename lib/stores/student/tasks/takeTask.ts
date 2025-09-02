@@ -75,12 +75,12 @@ interface TaskStoreState {
   taskData: Submission | null;
   textAnswer: string;
   fileAnswer: File | null;
-  persistedFileName: string | null; // NEW: Stores the name of a previously selected file.
+  persistedFileName: string | null;
   timer: number;
   timerInterval: NodeJS.Timeout | null;
   isTimed: boolean;
   loading: boolean;
-  isAutoSubmitting: boolean; // NEW: Flag for when submission is triggered by the timer.
+  isAutoSubmitting: boolean;
   error: string | null;
   submissionCompleted: { taskId: number; submissionId: number } | null;
   accessToken: string | null;
@@ -92,7 +92,7 @@ interface TaskStoreState {
   setFileAnswer: (file: File | null) => void;
   startTimer: () => void;
   stopTimer: () => void;
-  submitTask: (options?: SubmitTaskOptions) => Promise<void>; // UPDATED with proper type
+  submitTask: (options?: SubmitTaskOptions) => Promise<void>;
   reset: () => void;
   clearSubmissionCompleted: () => void;
 }
@@ -105,8 +105,20 @@ interface TaskStoreState {
 const getStorageKey = (taskId: number) => `task-submission-${taskId}`;
 
 /**
+ * Validates if a file is a PDF and under 10MB.
+ * @param {File} file - The file to validate.
+ * @returns {boolean} True if valid, false otherwise.
+ */
+const isValidPDF = (file: File): boolean => {
+  const isPDF =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const isUnder10MB = file.size <= 10 * 1024 * 1024;
+  return isPDF && isUnder10MB;
+};
+
+/**
  * Zustand store to manage the state and logic for a student taking a task.
- * ENHANCEMENTS: Debounced saving, smart error handling, file name persistence, and auto-submit state.
+ * ENHANCEMENTS: Debounced saving, smart error handling, file name persistence, auto-submit state, and redirection.
  */
 export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
   // A variable to hold the debounce timeout ID.
@@ -187,6 +199,18 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
     set({ timerInterval: iv });
   };
 
+  /**
+   * Redirects to the review page after successful submission.
+   * @param {number} taskId - The task ID.
+   * @param {number} submissionId - The submission ID.
+   */
+  const redirectToReview = (taskId: number, submissionId: number) => {
+    // Check if we're in a browser environment
+    if (typeof window !== "undefined") {
+      window.location.href = `/tasks/${taskId}/review/${submissionId}`;
+    }
+  };
+
   return {
     // --- Initial State ---
     taskData: null,
@@ -247,7 +271,7 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
     stopTimer,
 
     /**
-     * Submits the task with enhanced error handling.
+     * Submits the task with enhanced error handling and auto-submission support.
      * @param {SubmitTaskOptions} [options] - Submission options.
      */
     submitTask: async (options?: SubmitTaskOptions) => {
@@ -268,9 +292,21 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
       set({ loading: true, error: null, isAutoSubmitting: isAutoSubmit });
 
       // --- Validation ---
-      // Skip validation for auto-submit to allow empty submissions
-      if (!isAutoSubmit) {
+      // For auto-submit: validate file if present, but allow submission even with invalid/missing files
+      let validatedFileAnswer = fileAnswer;
+
+      if (isAutoSubmit) {
+        // For auto-submit, check file validity but don't block submission
+        if (fileAnswer && !isValidPDF(fileAnswer)) {
+          console.warn(
+            "Invalid PDF file detected during auto-submit. Submitting without file."
+          );
+          validatedFileAnswer = null;
+        }
+      } else {
+        // For manual submit: enforce all validation rules
         const { submission_type } = taskData.task;
+
         if (
           (submission_type === "text" && !textAnswer.trim()) ||
           (submission_type === "pdf" && !fileAnswer) ||
@@ -284,22 +320,32 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
           return;
         }
 
-        if (fileAnswer && fileAnswer.size > 10 * 1024 * 1024) {
-          // 10MB limit
-          set({
-            error: "File size must be less than 10MB.",
-            loading: false,
-            isAutoSubmitting: false,
-          });
-          return;
+        // Validate PDF file for manual submission
+        if (fileAnswer) {
+          if (!isValidPDF(fileAnswer)) {
+            set({
+              error: "Please upload a valid PDF file (max 10MB).",
+              loading: false,
+              isAutoSubmitting: false,
+            });
+            return;
+          }
         }
       }
 
       try {
         const formData = new FormData();
         formData.append("submission_id", taskData.id.toString());
-        if (textAnswer) formData.append("submitted_text", textAnswer);
-        if (fileAnswer) formData.append("submitted_pdf", fileAnswer);
+
+        // Always include text if present (for auto-submit, even if empty)
+        if (textAnswer || isAutoSubmit) {
+          formData.append("submitted_text", textAnswer || "");
+        }
+
+        // Only include file if it's valid
+        if (validatedFileAnswer) {
+          formData.append("submitted_pdf", validatedFileAnswer);
+        }
 
         await api.patch(
           `${djangoAPI}task/tasks/${taskData.task.id}/submissions/${taskData.id}/`,
@@ -314,17 +360,23 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
         // --- Success Handling ---
         localStorage.removeItem(getStorageKey(taskData.task.id));
         stopTimer();
+
+        const completedData = {
+          taskId: taskData.task.id,
+          submissionId: taskData.id,
+        };
+
         set({
-          submissionCompleted: {
-            taskId: taskData.task.id,
-            submissionId: taskData.id,
-          },
+          submissionCompleted: completedData,
           loading: false,
           isAutoSubmitting: false,
           textAnswer: "",
           fileAnswer: null,
           persistedFileName: null,
         });
+
+        // Redirect to review page after successful submission
+        redirectToReview(completedData.taskId, completedData.submissionId);
       } catch (err: unknown) {
         // --- Enhanced Error Handling ---
         console.error("Submission API error:", err);
@@ -342,26 +394,48 @@ export const useTakeTaskStore = create<TaskStoreState>((set, get) => {
 
           if (axiosError.response) {
             const status = axiosError.response.status;
-            if (status === 400)
+            if (status === 400) {
+              // For auto-submit with 400 error, try submitting without any files
+              if (isAutoSubmit && validatedFileAnswer) {
+                console.warn(
+                  "Auto-submit failed with file. Retrying without file."
+                );
+                set({ fileAnswer: null });
+                // Retry submission without file
+                return get().submitTask({ isAutoSubmit: true });
+              }
               errorMessage =
                 "Invalid submission data. Please check your answers.";
-            else if (status === 401 || status === 403)
+            } else if (status === 401 || status === 403) {
               errorMessage = "Authentication error. Please log in again.";
-            else if (status === 404)
+            } else if (status === 404) {
               errorMessage =
                 "The task could not be found. Please contact support.";
-            else if (status && status >= 500)
+            } else if (status && status >= 500) {
               errorMessage =
                 "Server error. We are looking into it. Please try again later.";
+            }
           } else if (axiosError.request) {
             errorMessage =
               "Network error. Please check your internet connection.";
           }
         }
 
+        // For auto-submit, if there's an error, still try to redirect if possible
+        if (isAutoSubmit) {
+          console.error("Auto-submit encountered an error:", errorMessage);
+          // Still redirect even if submission failed
+          const completedData = {
+            taskId: taskData.task.id,
+            submissionId: taskData.id,
+          };
+          redirectToReview(completedData.taskId, completedData.submissionId);
+        }
+
         set({ error: errorMessage, loading: false, isAutoSubmitting: false });
       }
     },
+
     reset: () => {
       const { taskData } = get();
       if (taskData) localStorage.removeItem(getStorageKey(taskData.task.id));

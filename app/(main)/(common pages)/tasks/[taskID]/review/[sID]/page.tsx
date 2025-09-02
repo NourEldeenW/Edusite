@@ -3,11 +3,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import { djangoApi } from "@/lib/axiosinterceptor";
-import { GradeType } from "@/lib/stores/student/quizzes/takeQuiz";
 import { formatUserDate } from "@/lib/formatDate";
 import SubmissionViewer from "./_reviewcomps/SubmissionViewer";
 import GradingSection from "./_reviewcomps/GradingSection";
 import ErrorPage from "./_reviewcomps/errorpag";
+import { GradeType } from "@/app/(main)/(common pages)/students/_students comps/main";
 
 export const metadata: Metadata = {
   title: "EduTrack | Task Review",
@@ -124,12 +124,18 @@ export default async function TReview({
     const diffMs = endTime.getTime() - startTime.getTime();
     const hours = Math.floor(diffMs / 3600000);
     const minutes = Math.floor((diffMs % 3600000) / 60000);
-    const timeTaken = `${hours} hour${
-      hours !== 1 ? "s" : ""
-    } ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+    const timeTaken = submissionDetail.end_time
+      ? `${hours} hour${hours !== 1 ? "s" : ""} ${minutes} minute${
+          minutes !== 1 ? "s" : ""
+        }`
+      : `${submissionDetail.task.timer_minutes} minute${
+          submissionDetail.task.timer_minutes !== 1 ? "s" : ""
+        }`;
 
     // Format submission date
-    const submittedOn = formatUserDate(submissionDetail.end_time);
+    const submittedOn = submissionDetail.end_time
+      ? formatUserDate(submissionDetail.end_time)
+      : null;
 
     const link = role === "student" ? `/student/tasks` : "/tasks";
 
@@ -210,6 +216,7 @@ export default async function TReview({
                 </div>
 
                 {/* Submission Content */}
+
                 <SubmissionViewer
                   text={submissionDetail.submitted_text}
                   pdf={submissionDetail.submitted_pdf}
@@ -224,7 +231,7 @@ export default async function TReview({
               sID={Number(sID)}
               submissionDetail={submissionDetail}
               timeTaken={timeTaken}
-              submittedOn={submittedOn}
+              submittedOn={submittedOn ?? "Late Submission (No Time)"}
               role={role}
               access={acces}
             />

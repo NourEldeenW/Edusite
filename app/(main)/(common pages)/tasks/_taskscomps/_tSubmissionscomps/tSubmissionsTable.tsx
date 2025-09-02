@@ -296,7 +296,6 @@ export default function TSubmissionsTable({
                 End time
               </TableHead>
               <TableHead className="min-w-[100px] text-left">Status</TableHead>
-              {/* Added Corrected by column header */}
               <TableHead className="min-w-[80px] text-left">
                 Time taken
               </TableHead>
@@ -312,9 +311,9 @@ export default function TSubmissionsTable({
           </TableHeader>
           <TableBody>
             {tablefilterddata.length > 0 ? (
-              tablefilterddata.map((student) => (
+              tablefilterddata.map((submission) => (
                 <TableRow
-                  key={student.student.id}
+                  key={submission.student.id}
                   className="hover:bg-bg-subtle">
                   <TableCell className="py-2 px-3">
                     <div className="flex items-center gap-2">
@@ -323,14 +322,14 @@ export default function TSubmissionsTable({
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-text-primary whitespace-nowrap truncate">
-                          {student.student.full_name}
+                          {submission.student.full_name}
                         </p>
                         <Badge
                           variant="outline"
                           className="gap-1 text-xs px-1 py-0">
                           <Building2 className="h-3 w-3" />
                           <span className="truncate max-w-[100px]">
-                            {student.student.center_name}
+                            {submission.student.center_name}
                           </span>
                         </Badge>
                       </div>
@@ -340,64 +339,64 @@ export default function TSubmissionsTable({
                     <div className="flex flex-col gap-0.5 text-sm">
                       <div className="flex items-center gap-1 whitespace-nowrap">
                         <Phone className="h-3 w-3 text-text-secondary" />
-                        <span>{student.student.phone_number}</span>
+                        <span>{submission.student.phone_number}</span>
                       </div>
-                      {student.student.parent_number && (
+                      {submission.student.parent_number && (
                         <div className="flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
                           <Users className="h-3 w-3" />
-                          <span>{student.student.parent_number}</span>
+                          <span>{submission.student.parent_number}</span>
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
-                    {student.start_time
-                      ? formatUserDate(student.start_time)
+                    {submission.start_time
+                      ? formatUserDate(submission.start_time, true, false)
                       : "no start time"}
                   </TableCell>
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
-                    {student.end_time
-                      ? formatUserDate(student.end_time)
+                    {submission.end_time
+                      ? formatUserDate(submission.end_time, true, false)
                       : "no end time"}
                   </TableCell>
                   <TableCell className="py-2 px-3">
                     <Badge
                       variant="outline"
                       className={`text-xs px-1.5 py-0.5 rounded-full ${
-                        student.status === "not_started"
+                        submission.status === "not_started"
                           ? "bg-gray-100 text-gray-700 border-gray-300"
-                          : student.status === "in_progress"
+                          : submission.status === "in_progress"
                           ? "bg-warning/10 text-warning border-warning/30"
-                          : student.status === "submitted"
-                          ? "bg-info/10 text-info border-info/30"
-                          : student.status === "corrected"
+                          : submission.status === "submitted"
+                          ? "bg-success/10 text-success border-success/30"
+                          : submission.status === "corrected"
                           ? "bg-success/10 text-success border-success/30"
                           : "bg-gray-100 text-gray-700 border-gray-300"
                       } border`}>
-                      {student.status === "not_started" && "Not Started"}
-                      {student.status === "in_progress" && "In Progress"}
-                      {student.status === "submitted" && "Submitted"}
-                      {student.status === "corrected" && "Corrected"}
+                      {submission.status === "not_started" && "Not Started"}
+                      {submission.status === "in_progress" && "In Progress"}
+                      {submission.status === "submitted" && "Submitted"}
+                      {submission.status === "corrected" && "Corrected"}
                       {![
                         "not_started",
                         "in_progress",
                         "submitted",
                         "corrected",
-                      ].includes(student.status) &&
-                        student.status.charAt(0).toUpperCase() +
-                          student.status.slice(1)}
+                      ].includes(submission.status) &&
+                        submission.status.charAt(0).toUpperCase() +
+                          submission.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
-                    {student.time_taken ? student.time_taken : "no time"}
+                    {submission.time_taken ? submission.time_taken : "no time"}
                   </TableCell>
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
-                    {student.score ? student.score : "no score"}
+                    {submission.score ? submission.score : "no score"}
                   </TableCell>
 
                   <TableCell className="py-2 px-3">
                     <div className="flex justify-start">
-                      {student.is_released ? (
+                      {submission.is_released ? (
                         <CheckCircle2 className="h-4 w-4 text-success" />
                       ) : (
                         <XCircle className="h-4 w-4 text-destructive" />
@@ -406,11 +405,11 @@ export default function TSubmissionsTable({
                   </TableCell>
 
                   <TableCell className="py-2 px-3 whitespace-nowrap text-sm">
-                    {student.corrected_by ? (
+                    {submission.corrected_by ? (
                       <div className="flex items-center gap-2">
                         <span>
-                          {typeof student.corrected_by === "string"
-                            ? student.corrected_by
+                          {typeof submission.corrected_by === "string"
+                            ? submission.corrected_by
                             : "N/A"}
                         </span>
                       </div>
@@ -438,9 +437,9 @@ export default function TSubmissionsTable({
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="p-0">
-                          {isValidStudentId(student.id) ? (
+                          {isValidStudentId(submission.id) ? (
                             <Link
-                              href={`/tasks/${taskId}/review/${student.id}`}
+                              href={`/tasks/${taskId}/review/${submission.id}`}
                               className="flex items-center gap-2 px-2 py-1 text-xs w-full hover:text-text-inverse hover:cursor-pointer focus:bg-bg-subtle">
                               <Eye className="h-3 w-3 text-text-secondary" />
                               <span>View Details</span>
@@ -460,8 +459,8 @@ export default function TSubmissionsTable({
                         {/* Delete Submission */}
                         <DropdownMenuItem
                           onClick={() =>
-                            isValidStudentId(student.id)
-                              ? handleDeleteClick(student.id)
+                            isValidStudentId(submission.id)
+                              ? handleDeleteClick(submission.id)
                               : showToast(
                                   "Cannot delete incomplete submission",
                                   "error"

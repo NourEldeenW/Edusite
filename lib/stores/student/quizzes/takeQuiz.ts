@@ -1,9 +1,7 @@
+import { GradeType } from "@/app/(main)/(common pages)/students/_students comps/main";
 import { api } from "@/lib/axiosinterceptor";
 import { create } from "zustand";
 const djangoAPI = process.env.NEXT_PUBLIC_DJANGO_BASE_URL;
-
-// -- Types ------------------------------------------------------------------
-export type GradeType = { id: number; name: string };
 
 type SubmissionStatus = "not_started" | "in_progress" | "submitted";
 

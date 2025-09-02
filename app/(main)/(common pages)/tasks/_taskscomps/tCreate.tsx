@@ -735,7 +735,7 @@ export default function TCreate({ access }: { access: string }) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="both" id="both-submission" />
-                  <Label htmlFor="both-submission">Text or PDF</Label>
+                  <Label htmlFor="both-submission">Text and PDF</Label>
                 </div>
               </RadioGroup>
             </div>

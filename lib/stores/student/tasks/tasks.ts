@@ -3,6 +3,11 @@ import { GradeType } from "../quizzes/takeQuiz";
 
 type submission_policy = "single";
 type availability_status = "Upcoming" | "Open" | "Closed";
+type student_submission_status =
+  | "Not Started"
+  | "In Progress"
+  | "Submitted"
+  | "corrected";
 
 interface task {
   id: number;
@@ -19,7 +24,7 @@ interface task {
     open_date: string;
     close_date: string;
   };
-  student_submission_status: string;
+  student_submission_status: student_submission_status;
   submission_id: number | null;
   availability_status: availability_status;
   is_graded: boolean;

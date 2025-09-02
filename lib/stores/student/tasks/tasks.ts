@@ -1,5 +1,5 @@
+import { GradeType } from "@/app/(main)/(common pages)/students/_students comps/main";
 import { create } from "zustand";
-import { GradeType } from "../quizzes/takeQuiz";
 
 type submission_policy = "single";
 type availability_status = "Upcoming" | "Open" | "Closed";

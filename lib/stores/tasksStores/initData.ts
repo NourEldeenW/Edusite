@@ -1,5 +1,5 @@
+import { GradeType } from "@/app/(main)/(common pages)/students/_students comps/main";
 import { create } from "zustand";
-import { GradeType } from "../student/quizzes/takeQuiz";
 
 interface Task {
   id: number;

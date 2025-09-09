@@ -39,7 +39,7 @@ export interface submission_detail {
     submission_type: submission_type;
     submission_policy: submission_policy;
     timer_minutes: number;
-    max_score: number;
+    max_score: number | null;
     created_at: string;
   };
   student: {

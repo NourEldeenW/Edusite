@@ -43,7 +43,11 @@ export default function GradingSection({
   }, [submissionDetail]);
 
   const handleSubmitGrade = async () => {
-    if (score === "" || score < 0 || score > submissionDetail.task.max_score) {
+    // Validate score only if max_score is set
+    if (
+      submissionDetail.task.max_score !== null &&
+      (score === "" || score < 0 || score > submissionDetail.task.max_score)
+    ) {
       showToastMessage("Error", "Please enter a valid score", "error");
       return;
     }
@@ -54,7 +58,7 @@ export default function GradingSection({
       await api.patch(
         `${djangoApi}task/tasks/${taskID}/submissions/${sID}/`,
         {
-          score,
+          score: score === "" ? null : score,
           feedback,
         },
         {
@@ -68,7 +72,9 @@ export default function GradingSection({
       setIsGraded(true);
       showToastMessage(
         "Success!",
-        "Submission graded successfully!",
+        isGraded
+          ? "Feedback updated successfully!"
+          : "Submission graded successfully!",
         "success"
       );
     } catch (error) {
@@ -112,87 +118,89 @@ export default function GradingSection({
         <div className="p-6">
           {isGraded ? (
             <>
-              <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-6 mb-6 border border-green-100">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                      <svg
-                        className="w-6 h-6 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+              {submissionDetail.task.max_score !== null && (
+                <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-6 mb-6 border border-green-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                        <svg
+                          className="w-6 h-6 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-bold text-gray-900">
+                          {score}/{submissionDetail.task.max_score}
+                        </span>
+                        <span className="ml-3 px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium text-sm">
+                          {Math.round(
+                            (Number(score) / submissionDetail.task.max_score) *
+                              100
+                          )}
+                          %
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-3xl font-bold text-gray-900">
-                        {score}/{submissionDetail.task.max_score}
-                      </span>
-                      <span className="ml-3 px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium text-sm">
-                        {Math.round(
-                          (Number(score) / submissionDetail.task.max_score) *
-                            100
-                        )}
-                        %
-                      </span>
-                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-500 mb-4">
+                    <svg
+                      className="w-4 h-4 inline mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Graded on{" "}
+                    {submissionDetail.corrected_at
+                      ? formatUserDate(submissionDetail.corrected_at)
+                      : "not graded yet"}
                   </div>
                 </div>
+              )}
 
-                <div className="text-sm text-gray-500 mb-4">
-                  <svg
-                    className="w-4 h-4 inline mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Graded on{" "}
-                  {submissionDetail.corrected_at
-                    ? formatUserDate(submissionDetail.corrected_at)
-                    : "not graded yet"}
+              {feedback ? (
+                <div className="bg-white p-4 rounded-lg border border-gray-200 mt-4">
+                  <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-2 text-blue-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                      />
+                    </svg>
+                    Instructor Feedback
+                  </h3>
+                  <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {feedback}
+                  </div>
                 </div>
-
-                {feedback ? (
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 mt-4">
-                    <h3 className="font-medium text-gray-700 mb-2 flex items-center">
-                      <svg
-                        className="w-4 h-4 mr-2 text-blue-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                        />
-                      </svg>
-                      Instructor Feedback
-                    </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                      {feedback}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500 italic">
-                    No feedback provided.
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500 italic">
+                  No feedback provided.
+                </div>
+              )}
             </>
           ) : (
             <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-6 text-center">
@@ -313,59 +321,91 @@ export default function GradingSection({
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <h2 className="text-xl font-semibold text-gray-800">
-            Grade Submission
+            {isGraded ? "Update Feedback" : "Grade Submission"}
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            Provide score and feedback
+            {isGraded
+              ? "Update score and feedback for this submission"
+              : "Provide score and feedback for this submission"}
           </p>
         </div>
 
         <div className="p-6 space-y-6">
-          <div>
-            <label
-              htmlFor="score"
-              className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-              <svg
-                className="w-4 h-4 mr-2 text-blue-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Score
-            </label>
-            <div className="flex items-center">
-              <input
-                type="number"
-                id="score"
-                min="0"
-                max={submissionDetail.task.max_score}
-                step="0.5"
-                placeholder={`Enter score (0-${submissionDetail.task.max_score})`}
-                value={score}
-                onChange={(e) => {
-                  const value =
-                    e.target.value === "" ? "" : Number(e.target.value);
-                  if (
-                    value === "" ||
-                    (value >= 0 && value <= submissionDetail.task.max_score)
-                  ) {
-                    setScore(value);
-                  }
-                }}
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <span className="ml-3 text-gray-600 font-medium">
-                / {submissionDetail.task.max_score}
-              </span>
+          {submissionDetail.task.max_score === null ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <h3 className="text-blue-800 font-medium">
+                    No Maximum Score Set
+                  </h3>
+                  <p className="text-blue-600 text-sm mt-1">
+                    This task doesn&apos;t have a maximum score set. You can
+                    provide feedback but cannot grade this submission until a
+                    maximum score is set.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label
+                htmlFor="score"
+                className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <svg
+                  className="w-4 h-4 mr-2 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Score
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  id="score"
+                  min="0"
+                  max={submissionDetail.task.max_score}
+                  step="0.5"
+                  placeholder={`Enter score (0-${submissionDetail.task.max_score})`}
+                  value={score}
+                  onChange={(e) => {
+                    const value =
+                      e.target.value === "" ? "" : Number(e.target.value);
+                    if (
+                      value === "" ||
+                      (value >= 0 && value <= submissionDetail.task.max_score!)
+                    ) {
+                      setScore(value);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+                <span className="ml-3 text-gray-600 font-medium">
+                  / {submissionDetail.task.max_score}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div>
             <label
@@ -394,14 +434,15 @@ export default function GradingSection({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors h-40 resize-none"></textarea>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-              Cancel
-            </button>
+          <div className="flex items-center justify-center">
             <button
               className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 flex items-center transition-all duration-200 shadow-sm hover:shadow-md font-medium"
               onClick={handleSubmitGrade}
-              disabled={isLoading}>
+              disabled={
+                isLoading ||
+                (submissionDetail.task.max_score !== null &&
+                  (score === "" || score < 0))
+              }>
               {isLoading ? (
                 <>
                   <svg
@@ -421,7 +462,7 @@ export default function GradingSection({
                       fill="currentColor"
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Grading...
+                  {isGraded ? "Updating..." : "Grading..."}
                 </>
               ) : (
                 <>
@@ -438,7 +479,7 @@ export default function GradingSection({
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  Submit Grade
+                  {isGraded ? "Update Feedback" : "Submit Grade"}
                 </>
               )}
             </button>

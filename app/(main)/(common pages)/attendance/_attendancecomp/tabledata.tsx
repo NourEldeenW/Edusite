@@ -10,6 +10,8 @@ import {
   XCircle,
   MoreVertical,
   CheckCircle2,
+  Search,
+  X,
 } from "lucide-react";
 import {
   Table,
@@ -74,6 +76,8 @@ export default function TableData({
   const [isLoading, setIsLoading] = useState(false);
   const [localAttendedStudents, setLocalAttendedStudents] =
     useState<Attendance_StudentType[]>(attended_students);
+  const [searchAttended, setSearchAttended] = useState("");
+  const [searchAbsent, setSearchAbsent] = useState("");
 
   const { allStudents } = useContext(AllStudentsContext);
   const hashomework = useContext(homework);
@@ -104,6 +108,39 @@ export default function TableData({
 
     return [attendedArr, absentArr];
   }, [allStudents, attendedStudentIds, centerid]);
+
+  // Advanced search function
+  const filterStudents = (students: Student[], query: string) => {
+    if (!query) return students;
+
+    const lowerQuery = query.toLowerCase().trim();
+
+    return students.filter((student) => {
+      // Search in multiple fields with partial matching
+      const fieldsToSearch = [
+        student.full_name,
+        student.phone_number,
+        student.parent_number,
+        student.student_id,
+        student.center?.name || "",
+      ];
+
+      return fieldsToSearch.some(
+        (field) => field && field.toLowerCase().includes(lowerQuery)
+      );
+    });
+  };
+
+  // Filter students based on search queries
+  const filteredAttended = useMemo(
+    () => filterStudents(attended, searchAttended),
+    [attended, searchAttended]
+  );
+
+  const filteredAbsent = useMemo(
+    () => filterStudents(absent, searchAbsent),
+    [absent, searchAbsent]
+  );
 
   const handleTakeAttendance = () => {
     setIsTakingAttendance(true);
@@ -288,6 +325,28 @@ export default function TableData({
             </Button>
           </div>
 
+          {/* Search bar for attended students */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by name, phone, ID, or center..."
+                value={searchAttended}
+                onChange={(e) => setSearchAttended(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchAttended && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchAttended("")}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
@@ -299,25 +358,30 @@ export default function TableData({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {attended.length === 0 ? (
+              {filteredAttended.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center">
+                  <TableCell
+                    colSpan={hashomework ? 5 : 4}
+                    className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="bg-gray-100 rounded-full p-3 mb-4">
                         <User className="w-8 h-8 text-gray-400" />
                       </div>
                       <h4 className="text-lg font-medium text-gray-700 mb-1">
-                        No Attended Students
+                        {searchAttended
+                          ? "No matching students"
+                          : "No Attended Students"}
                       </h4>
                       <p className="text-gray-500 max-w-md">
-                        No students have been marked as attended for this
-                        session.
+                        {searchAttended
+                          ? `No attended students found for "${searchAttended}"`
+                          : "No students have been marked as attended for this session."}
                       </p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                attended.map((student) => (
+                filteredAttended.map((student) => (
                   <TableRow key={student.id} className="hover:bg-gray-50">
                     <TableCell className="pl-8">
                       <div className="flex items-center gap-3">
@@ -390,19 +454,41 @@ export default function TableData({
 
         {/* Absent Students Section */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-rose-500" />
-              Absent Students
-              <Badge
-                variant="secondary"
-                className="ml-2 bg-rose-100 text-rose-800">
-                {absent.length}
-              </Badge>
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Students who were absent for this session
-            </p>
+          <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-rose-500" />
+                Absent Students
+                <Badge
+                  variant="secondary"
+                  className="ml-2 bg-rose-100 text-rose-800">
+                  {absent.length}
+                </Badge>
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Students who were absent for this session
+              </p>
+            </div>
+
+            {/* Search bar for absent students */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by name, phone, ID, or center..."
+                value={searchAbsent}
+                onChange={(e) => setSearchAbsent(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchAbsent && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchAbsent("")}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           <Table>
@@ -415,24 +501,35 @@ export default function TableData({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {absent.length === 0 ? (
+              {filteredAbsent.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="bg-green-100 rounded-full p-3 mb-4">
-                        <User className="w-8 h-8 text-green-500" />
+                      <div
+                        className={`rounded-full p-3 mb-4 ${
+                          searchAbsent ? "bg-gray-100" : "bg-green-100"
+                        }`}>
+                        <User
+                          className={`w-8 h-8 ${
+                            searchAbsent ? "text-gray-400" : "text-green-500"
+                          }`}
+                        />
                       </div>
                       <h4 className="text-lg font-medium text-gray-700 mb-1">
-                        Perfect Attendance!
+                        {searchAbsent
+                          ? "No matching students"
+                          : "Perfect Attendance!"}
                       </h4>
                       <p className="text-gray-500 max-w-md">
-                        All students attended this session. Great job!
+                        {searchAbsent
+                          ? `No absent students found for "${searchAbsent}"`
+                          : "All students attended this session. Great job!"}
                       </p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                absent.map((student) => (
+                filteredAbsent.map((student) => (
                   <TableRow key={student.id} className="hover:bg-gray-50">
                     <TableCell className="pl-8">
                       <div className="flex items-center gap-3">

@@ -27,7 +27,6 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Edit,
-  Eye,
   MoreVertical,
   Phone,
   Trash2,
@@ -39,6 +38,7 @@ import {
   UsersRound,
   X,
   Lock,
+  FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { api } from "@/lib/axiosinterceptor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import GenerateStudentReportDialog from "./generateStuReport";
 
 interface TableDataProps {
   data: StudentData[];
@@ -168,6 +169,10 @@ export default function TableData({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialStudentData, setInitialStudentData] =
     useState<EditStudentData | null>(null);
+  const [isGenerateReportDialogOpen, setIsGenerateReportDialogOpen] =
+    useState(false);
+  const [selectedStudentForReport, setSelectedStudentForReport] =
+    useState<StudentData | null>(null);
 
   // Edit student data state
   const [editstudentdata, setEditstudentdata] = useState<EditStudentData>({
@@ -192,6 +197,11 @@ export default function TableData({
     ],
     []
   );
+
+  const handleGenerateReport = useCallback((student: StudentData) => {
+    setSelectedStudentForReport(student);
+    setIsGenerateReportDialogOpen(true);
+  }, []);
 
   // Get status color class
   const getStatusColor = useCallback((status: string) => {
@@ -564,6 +574,7 @@ export default function TableData({
                       setDeleteStudentId(student.id);
                       setShowDeleteDialog(true);
                     }}
+                    onGenerateReport={() => handleGenerateReport(student)} // Add this line
                   />
                 ))
               ) : (
@@ -606,6 +617,15 @@ export default function TableData({
         isLoading={isEditLoading}
         isSubmitting={isSubmitting}
       />
+
+      {selectedStudentForReport && (
+        <GenerateStudentReportDialog
+          access={access}
+          student={selectedStudentForReport}
+          open={isGenerateReportDialogOpen}
+          onOpenChange={setIsGenerateReportDialogOpen}
+        />
+      )}
     </>
   );
 }
@@ -647,6 +667,7 @@ interface StudentRowProps {
   getStatusColor: (status: string) => string;
   onEdit: () => void;
   onDelete: () => void;
+  onGenerateReport: () => void; // Make sure this is included
 }
 
 const StudentRow = ({
@@ -654,6 +675,7 @@ const StudentRow = ({
   getStatusColor,
   onEdit,
   onDelete,
+  onGenerateReport, // Add this line to destructure the prop
 }: StudentRowProps) => {
   const [isDropDownOpen, setIsDropDownOpen] = useState(false);
 
@@ -718,12 +740,18 @@ const StudentRow = ({
               Actions
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {/* Add the Generate Report option */}
             <DropdownMenuItem
               className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
-              onSelect={(e) => e.preventDefault()}>
-              <Eye className="h-4 w-4 text-text-secondary" />
-              <span>View Details</span>
+              onSelect={(e) => {
+                e.preventDefault();
+                setIsDropDownOpen(false);
+                onGenerateReport(); // This should now work
+              }}>
+              <FileText className="h-4 w-4 text-emerald-600" />
+              <span className="text-emerald-700">Generate Report</span>
             </DropdownMenuItem>
+
             <DropdownMenuItem
               className="flex items-center gap-2 px-2 py-2 text-sm hover:bg-bg-subtle hover:cursor-pointer focus:bg-bg-subtle"
               onSelect={(e) => {
@@ -1063,7 +1091,7 @@ const EditStudentDialog = ({
                     type="text"
                     id="username"
                     minLength={4}
-                    maxLength={20}
+                    maxLength={35}
                     className="w-full px-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                     placeholder="Enter username"
                     value={studentData?.username}
@@ -1073,7 +1101,7 @@ const EditStudentDialog = ({
                   />
                 </div>
                 <p className="mt-1 text-xs text-text-secondary">
-                  Must be 4-20 characters
+                  Must be 4-35 characters
                 </p>
               </div>
 

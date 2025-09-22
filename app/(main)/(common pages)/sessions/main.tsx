@@ -43,6 +43,7 @@ import {
 import { showToast } from "../students/_students comps/main";
 import EditSessionDialog from "./_sessions_comps/editSessionForm";
 import { Skeleton } from "@/components/ui/skeleton";
+import GenerateReportDialog from "./_sessions_comps/createReport";
 
 type currentViewType = "main" | "sessionDetails";
 
@@ -227,7 +228,12 @@ export default function Main({
                 View and manage all your teaching sessions
               </p>
             </div>
-            <AddSessionForm access={access} />
+
+            {/* Add these buttons */}
+            <div className="flex gap-3">
+              <GenerateReportDialog access={access} />
+              <AddSessionForm access={access} />
+            </div>
           </div>
 
           {/* Stat Cards - Skeleton when loading */}

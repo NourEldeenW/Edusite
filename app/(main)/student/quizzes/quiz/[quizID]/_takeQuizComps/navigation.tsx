@@ -81,7 +81,7 @@ export default function QuizNavigation() {
   if (!quizData) return null;
 
   return (
-    <div className="w-full bg-white shadow-lg border-t rounded-t-lg">
+    <div className="w-full bg-white shadow-lg border-t rounded-t-lg h-fit">
       {/* Progress bar */}
       <div className="h-2 w-full bg-gray-200">
         <div
@@ -91,7 +91,7 @@ export default function QuizNavigation() {
       </div>
 
       {/* Main nav container */}
-      <div className="container mx-auto px-2 overflow-hidden transition-all duration-300 max-h-screen py-2">
+      <div className="container mx-auto px-2 transition-all duration-300 py-2">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Navigation controls */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -108,7 +108,7 @@ export default function QuizNavigation() {
           </div>
 
           {/* Question grid - All questions displayed */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 max-h-36 overflow-y-auto">
             <div className="flex flex-wrap justify-center gap-2 py-1 px-2">
               {quizData.questions.map((question, idx) => {
                 const isCurrent = idx === currentQuestionIndex;

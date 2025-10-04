@@ -223,7 +223,7 @@ function ConfDialog({
                 You haven&apos;t answered {unansweredQuestions.length}{" "}
                 question(s):
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                 {unansweredQuestions.map((num) => (
                   <span
                     key={num}
